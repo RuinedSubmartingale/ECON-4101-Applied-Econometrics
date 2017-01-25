@@ -1,0 +1,95 @@
+---
+title: |
+  | ECON 4101 Econometrics
+  | CM04 Homework
+author: "Pranav Singh"
+date: "Jan 24, 2017"
+output: pdf_document
+# output: html_document
+# output: github_document
+---
+
+```{r, include=F}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=80),tidy=T)
+# opts_chunk$set(results = "hold")
+# opts_chunk$set(collapse = T)
+options.orig <- options()
+options(scipen=999)
+# options(width=100)
+```
+
+
+# Problems 1-6
+```{r, fig.width=8}
+receipts <- read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/receipts.csv', header = T)
+summary(receipts)
+fph.boxplot <- boxplot(receipts$length, horizontal = T, main = 'Receipts Length Boxplot')
+fph.boxplot <- boxplot(receipts$value, horizontal = T, main = 'Receipts Value Boxplot')
+plot(value ~ length, data=receipts, main = 'Scatter Plot of Receipts (Length, Value)')
+
+```
+
+# Problem 7
+```{r, fig.width=8}
+q1 <- quantile(fph, .25)
+q3 <- quantile(fph, .75)
+iqr = q3 - q1
+low.whisker <- q1 - 1.5*iqr
+high.whisker <- q3 + 1.5*iqr
+
+q.05 <- quantile(fph, .05)
+q.95 <- quantile(fph, .95)
+fph[fph < low.whisker] <- q.05
+fph[fph > high.whisker] <- q.95
+
+summary(fph)
+print(paste0("Standard deviation: ", sd(fph)))
+fph.boxplot <- boxplot(fph, horizontal = T, main = "FPH Boxplot (after correcting outliers)")
+```
+
+# Problem 8
+```{r}
+invisible(library(data.table))
+# convert a copy of mtcars data.frame into a data.table for convenience :)
+mtcars <- setDT(copy(mtcars))
+mtcars <- mtcars[cyl %in% c(4,6), ]
+setorder(mtcars, cyl)
+mtcars[, .(.N, mean.mpg = mean(mpg)), by = .(cyl)]
+
+var.test(mpg ~ cyl, data = mtcars)
+t.test(mpg ~ cyl, data = mtcars, paired = F, var.equal = F)
+
+# for kicks and giggles, let's verify:
+x <- mtcars[cyl == 4,]$mpg
+y <- mtcars[cyl == 6,]$mpg
+x.n <- length(x); x.var <- var(x); x.mean <- mean(x);
+y.n <- length(y); y.var <- var(y); y.mean <- mean(y);
+
+t.statistic <- -1*abs((x.mean - y.mean))/sqrt(x.var/x.n + y.var/y.n)
+t.degf <- (x.var/x.n + y.var/y.n)^2 / (x.var^2/x.n^2/(x.n - 1) + y.var^2/y.n^2/(y.n - 1))
+t.pvalue <- 2*pt(t.statistic, t.degf)
+print(paste0("manual p-value calculation for Welch's t-test: ", t.pvalue))
+```
+The tiny p-value of approximately `r round(t.pvalue, 6)` from Welch's t-test suggests that we have sufficent evidence at the 95% confidence level to reject the hypothesis that the mean fuel economy (mpg) of 6 cylinder cars is the same as 4 cylinder cars.
+
+
+# Problem 9
+```{r, fig.width=8}
+# http://www.st.nmfs.noaa.gov/commercial-fisheries/commercial-landings/annual-landings/index
+# Species: snappers
+# Years: 1996-2015
+# Geographical area: All States
+snappers <- setDT(read.csv('~/Downloads/MF_ANNUAL_LANDINGS.RESULTS', skip = 4))
+title <- 'Histogram of Annual US Snapper Landings in Metric Tons (1996 - 2015)'
+hist(snappers$Metric.Tons, main = title, xlab = 'Metric Tons')
+```
+
+# Problem 10
+```{r}
+women <- setDT(copy(women))
+print(paste0("Sample covariance: ", cov(women$height, women$weight)))
+print(paste0("Population covariance: ", sum((women$height - mean(women$height))*(women$weight - mean(women$weight)))/nrow(women)))
+print(paste0("Population covariance ( = (n-1)/n * Sample covariance ): ",  (nrow(women) - 1)/(nrow(women)) * cov(women$height, women$weight)))
+```
+
