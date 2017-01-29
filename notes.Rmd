@@ -2,11 +2,17 @@
 title: "Notes on Applied Econometrics"
 author: "Pranav Singh"
 date: "Spring 2017"
-ouptut: 
+output: pdf_document
+ouptut:
   pdf_document:
-    toc: true
+    toc: yes
     toc_depth: 2
 ---
+```{r}
+library(knitr)
+opts_chunk$set(cache = T)
+```
+
 # Discrete Random Variables
 Let X = outcome of flipping a fair coin.
   X = 0 if heads
@@ -15,3 +21,142 @@ p_1 = P(X = 0) = 1/2
 P_2 = P(X = 1) = 1/2
 
 - `p_1` and `p_2` define Probability (mass/density) function
+
+```{r}
+# evansresearch.us/DSC/Spring2017/ECMT/
+home.prices <- read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/hprice.csv', header = T)
+```
+
+# Linear regression
+Economic Model  
+Consumer Expenditures = f(DisposableDisposable Income)  
+$y = \beta_0 + \beta_1x$  
+$E[y | x] = E[\beta_0 + \beta_1x]$  
+$\sigma^2 \equiv VAR(y)$  
+$COV(y_i, y_j) = \emptyset \quad \forall i \neq j$  
+$x_i \neq x_j$ (i.e. $x$ is not a random variable)  
+$y \sim N(\beta_0 + \beta_1x, \sigma^2)$  
+  
+Assumption 1: $y = \underbrace{\beta_0 + \beta_1x}_{systeatic} \quad + \underbrace{e}_{unobserved}$  
+Assumption 2: $E[e] = 0$  
+Assumption 3: $VAR(e) = \sigma^2$  
+Assumption 4: $COV(e_i, e_j) = 0$  
+Assumption 5: $x_i \neq x_j$ for at least 2 values  
+Assumption 6: $e \sim \mathcal{N}(0, \sigma^2)$  
+
+We want to minimize the least squares error $LSE = (\hat{y} - \hat{r}(x))^2$, where $\hat{r}(x) = \hat{\beta_0} + \hat{\beta_1}x$. Then the estimated error is $\hat{e} = \hat{y} - \hat{r}(x)$.
+
+
+```{r}
+# https://stackoverflow.com/questions/7549694/ggplot2-adding-regression-line-equation-and-r2-on-graph
+lm_eqn = function(m) {
+
+  l <- list(a = format(coef(m)[1], digits = 2),
+      b = format(abs(coef(m)[2]), digits = 2),
+      r2 = format(summary(m)$r.squared, digits = 3));
+
+  if (coef(m)[2] >= 0)  {
+    eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2,l)
+  } else {
+    eq <- substitute(italic(y) == a - b %.% italic(x)*","~~italic(r)^2~"="~r2,l)    
+  }
+
+  as.character(as.expression(eq));                 
+}
+```
+
+```{r}
+library(ggplot2)
+dispIncome.consump <- read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/cm04YC.csv', header=T)
+y <- dispIncome.consump$consump; names(y) <- 'Consumption'
+x <- dispIncome.consump$dispinc; names(x) <- 'Disposable Income'
+boxplot(cbind(x,y), horizontal=T, col='gray')
+lm.res <- lm(y ~ x)
+ggplot(dispIncome.consump, aes(x=dispinc, y=consump)) + 
+  geom_point() + 
+  geom_smooth(method = 'lm', formula = y ~ x) +
+  annotate("text", x = min(x) + .2*(max(x) - min(x)), y = max(y), label = lm_eqn(lm.res), colour="black", size = 5, parse=TRUE)
+ggplot(dispIncome.consump, aes(x=dispinc, y=consump)) + geom_point() + geom_smooth(method = 'loess')
+
+cov(x,y)
+cor(x,y)
+res1 <- cor.test(x,y); res1
+if(res1$p.value < 0.05) {
+  message('significantly different from 0 at alpha=.05')
+} else {
+  message('not significantly different from 0 at alpha=.05')
+}
+
+# Manual calculation of estimated linear regression parameters
+n <- length(x)
+b1.num <- n*sum(x*y) - sum(x)*sum(y)
+b1.denom <- n*sum(x^2) - sum(x)^2
+b1 <- b1.num / b1.denom
+b0 <- mean(y) - b1*mean(x)
+round(b1,6) == round(cor(x,y)*sd(y)/sd(x), 6) # verify b1 = r * s_y / s_x
+print(c(b0, b1))
+print(lm.res$coefficients)
+plot(x,y)
+abline(b0, b1, lty=4, col='blue')
+abline(h=mean(y), v=mean(x))
+```
+
+# Analysis of Variance
+
+Total Sum of Squares = $TSS = \sum(y - \bar{y})^2$  
+Sum of Squared Errors = $SSE = \sum(y - \hat{y})^2$  
+Sum of Squares Regression = $SSR = \sum(\hat{y} - \bar{y})^2$  
+$TSS = SSE + SSR$
+
+|           | SS  | df    | MS = SS / df
+---         | --- | ---   | ---
+Regression  | SSR | k     | MSR = SSR / df
+Error       | SSE | n - k - 1 | MSE = SSE / df
+Total       | TSS | n - 1 |
+
+$SEE = \text{standard error of estimate} = \sqrt{MSE}$  
+
+## Goodness of Fit Tests
+$R^2 = \text{coefficient of determination} = \frac{SSR}{TSS}$  
+$R^2_{Adj} = 1 - (1 + R^2)\theta$, where $\theta = \frac{n-1}{n-k-1}$ where $k$ is the number of independent variables  
+
+### F Statistic
+$H_0 : \beta_1 = 0$
+$H_1 : \beta_1 \neq 0$
+$\alpha = .05$
+$F_{df_1, df_2} = \frac{MSR}{MSE} \text{ where } df_1 = 1 ,\; df_2 = n-2$
+Reject $H_0$ if $F_{1,n-2} > F_{crit}$  
+```{r}
+data(mtcars)
+y <- mtcars$mpg
+x <- mtcars$hp
+plot(x, y, pch=1, col='blue', ylab = 'mpg', xlab = 'hp')
+ybar <- mean(y)
+abline(h=ybar, col='blue', lwd=.5)
+n <- length(y)
+mod1 <- lm(y ~ x)
+b0 <- mod1$coefficients[1]
+b1 <- mod1$coefficients[2]
+abline(coef = c(b0,b1), lty=4, col='orange')
+yhat <- b0 + b1*x
+points(x,yhat,pch=24,col='red')
+ssr <- sum((yhat - ybar)^2)
+df <- 1
+msr <- ssr / df
+sse <- sum( (y - yhat)^2 )
+tss <- ssr + sse
+r2 <- ssr / tss
+round(r2, 4) == round(summary(mod1)$r.squared, 4)
+k <- 1
+r2adj <- 1 - (1-r2)*(n-1)/(n-k-1)
+round(r2adj, 4) == round(summary(mod1)$adj.r.squared, 4)
+round(tss / (n-k), 4) == round(var(y), 4)
+mse <- sse / (n - k - 1)
+see <- sqrt(mse)
+fstat <- msr / mse
+round(fstat, 4) == round(summary(mod1)$fstatistic['value'], 4)
+
+fcrit <- qf(0.95, k, n - 2)
+pf(fstat, k, n-2, lower=F)
+```
+
