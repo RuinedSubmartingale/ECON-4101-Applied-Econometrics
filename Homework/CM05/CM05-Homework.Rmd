@@ -1,0 +1,147 @@
+---
+title: |
+  | ECON 4101 Econometrics
+  | CM05 Homework
+author: "Pranav Singh"
+date: "Jan 29, 2017"
+output: pdf_document
+# output: html_document
+# output: github_document
+---
+
+```{r, include=F}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=80),tidy=T)
+options(scipen=999)
+
+library(ggplot2)
+theme_set(theme_bw())
+library(gridExtra)
+```
+
+# Goal:
+Use simple linear regression and analysis of variance to test the hypothesis that reported hectares of corn (soybeans) are explained by the number of pixels of corn (soybeans) in sample segment within county, from satellite data.
+
+# Data:
+Survey and satellite data for 37 observations of corn and soy beans in 12 Iowa counties, obtained from the 1978 June Enumerative Survey of the U.S. Department of Agriculture and from land observatory satellites (LANDSAT) during the 1978 growing season.
+
+*county*: county number  
+*cornhec*: hectares of corn  
+*soyhec*: hectares of soybeans  
+*cornpix*: satellite pixels of corn  
+*soypix*: satellite pixels of soybeans  
+```{r, message=F}
+library(xlsx); library(data.table)
+temp <- tempfile()
+download.file('http://evansresearch.us/DSC/Spring2017/ECMT/Data_Woolridge/corn.xls', temp)
+data <- setDT(read.xlsx2(temp, 1, colClasses = c('character', rep('numeric', 4))))
+unlink(temp)
+```
+# Problem 1
+```{r}
+colnames(data) <- c('county', 'cornhec', 'soyhec', 'cornpix', 'soypix')
+n <- nrow(data)
+print(paste0('Number of observations: ', n))
+sapply(data[,!'county'], function(x) c(summary(x), 'Standard Deviation' = sd(x), 'Coefficient of Variance' = sd(x)/mean(x)))
+```
+
+# Problem 2
+```{r, fig.height=3}
+g1 <- ggplot(data = data, aes(x = cornpix, y = cornhec)) + geom_point() + labs(y = 'Hectares of Corn', x = 'Pixels of Corn')
+g2 <- ggplot(data = data, aes(x = soypix, y = soyhec)) + geom_point() + labs(y = 'Hectares of Soybeans', x = 'Pixels of Soybeans')
+grid.arrange(g1, g2, ncol = 2)
+```
+
+# Problem 3
+```{r}
+lm.corn <- lm(data = data, cornhec ~ cornpix)
+lm.soy <- lm(data = data, soyhec ~ soypix)
+
+cornhec.hat <- predict(lm.corn)
+soyhec.hat <- predict(lm.soy)
+
+cornhec.bar <- mean(data$cornhec)
+soyhec.bar <- mean(data$soyhec)
+sse.corn <- sum( (data$cornhec - cornhec.hat)^2 )
+sse.soy <- sum( (data$soyhec - soyhec.hat)^2 )
+ssr.corn <- sum( (cornhec.bar - cornhec.hat)^2 )
+ssr.soy <- sum( (soyhec.bar - soyhec.hat)^2 )
+tss.corn <- ssr.corn + sse.corn
+tss.soy <- ssr.soy + sse.soy
+r2.corn <- ssr.corn / tss.corn
+r2.soy <- ssr.soy / tss.soy
+
+df.regression <- 1
+df.error <- n - df.regression - 1
+
+msr.corn <- ssr.corn / df.regression
+msr.soy <- ssr.soy / df.regression
+mse.corn <- sse.corn / df.error
+mse.soy <- sse.soy / df.error
+
+fstat.corn <- msr.corn / mse.corn
+fstat.soy <- msr.soy / mse.soy
+```
+
+```{r}
+options(knitr.kable.NA = '')
+anova.rownames <- c('Regression', 'Error', 'Total')
+anova.corn <- data.frame(
+  'Degrees of Freedom' = c(df.regression, df.error, df.regression + df.error)
+  , 'Sum of Squares' = c(ssr.corn, sse.corn, tss.corn)
+  , 'Mean Sum of Squares' = c(msr.corn, mse.corn, NA)
+  , 'F Statistic' = c(fstat.corn, NA, NA)
+)
+rownames(anova.corn) <- anova.rownames
+anova.soy <- data.frame(
+  'Degrees of Freedom' = c(df.regression, df.error, df.regression + df.error)
+  , 'Sum of Squares' = c(ssr.soy, sse.soy, tss.soy)
+  , 'Mean Sum of Squares' = c(msr.soy, mse.soy, NA)
+  , 'F Statistic' = c(fstat.soy, NA, NA)
+)
+rownames(anova.soy) <- anova.rownames
+
+kable(anova.corn, digits = 4, caption = 'ANOVA: CornHec ~ CornPix')
+kable(anova.soy, digits = 4, caption = 'ANOVA: SoyHec ~ SoyPix')
+```
+
+```{r}
+see.corn <- sqrt(mse.corn)
+see.soy <- sqrt(mse.soy)
+
+fcrit <- qf(0.95, df.regression, df.error)
+pf.corn <- pf(fstat.corn, df.regression, df.error, lower.tail = F)
+pf.soy <- pf(fstat.soy, df.regression, df.error, lower.tail = F)
+
+print(paste0('Corn: Standard Error of Estimate = ', see.corn))
+print(paste0('Soybeans: Standard Error of Estimate = ', see.soy))
+print(paste0('Critical value of F at .05 significance level: ', fcrit))
+print(paste0('Corn: (F-statistic, p-value) = (', fstat.corn, ', ', pf.corn, ')'))
+print(paste0('Soybeans: (F-statistic, p-value) = (', fstat.soy, ', ', pf.soy, ')'))
+```
+Since the F-test statistic for both models is greater than the critical F-value, we conclude that, at the 5% significance level, the predictors do help explain more of the variance of their corresponding responses than does the null (intercept-only) model. That is, when modeling hectares of corn/soybeans, the simple linear regression model that takes into account satellite pixels of corn/soybeans has a better fit than the null model that only includes an intercept term.
+
+```{r, include=F}
+# https://stackoverflow.com/questions/7549694/ggplot2-adding-regression-line-equation-and-r2-on-graph
+lm_eqn = function(m) {
+
+  l <- list(a = format(coef(m)[1], digits = 2),
+      b = format(abs(coef(m)[2]), digits = 2),
+      r2 = format(summary(m)$r.squared, digits = 3));
+
+  if (coef(m)[2] >= 0)  {
+    eq <- substitute(italic(y)~"="~a + b %.% italic(x)*","~~italic(R)^2~"="~r2,l)
+  } else {
+    eq <- substitute(italic(y)~"="~a - b %.% italic(x)*","~~italic(R)^2~"="~r2,l)    
+  }
+
+  as.character(as.expression(eq));                 
+}
+```
+
+```{r, fig.height=4}
+aes.near.topleft <-aes(x=-Inf, y=Inf, hjust=-.1, vjust=2)
+g1 <- g1 + geom_line(aes(y=cornhec.hat))  + geom_text(aes.near.topleft, label = lm_eqn(lm.corn), parse = T, size = 4)
+g2 <- g2 + geom_line(aes(y=soyhec.hat)) + geom_text(aes.near.topleft, label = lm_eqn(lm.soy), parse = T, size = 4)
+grid.arrange(g1, g2, nrow = 2)
+```
