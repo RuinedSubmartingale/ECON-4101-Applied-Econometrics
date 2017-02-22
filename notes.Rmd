@@ -2,14 +2,17 @@
 title: "Notes on Applied Econometrics"
 author: "Pranav Singh"
 date: "Spring 2017"
-output: pdf_document
+output:
+  html_document: default
+  pdf_document: default
 ouptut:
   pdf_document:
     toc: yes
     toc_depth: 2
 ---
-```{r}
+```{r setup}
 library(knitr)
+opts_knit$set(root.dir='~/Google Drive/Dalton State College/2017 Spring/ECON-4101-Applied-Econometrics/')
 opts_chunk$set(cache = T)
 ```
 
@@ -158,5 +161,207 @@ round(fstat, 4) == round(summary(mod1)$fstatistic['value'], 4)
 
 fcrit <- qf(0.95, k, n - 2)
 pf(fstat, k, n-2, lower=F)
+```
+
+# CM07
+```{r}
+data <- read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/tabb777.csv', header=T)
+```
+```{r}
+str(data)
+data$fuel <- data$fuel/1000
+plot(data$hours, data$fuel)
+```
+```{r}
+lm.mod <- lm(data = data, fuel ~ hours)
+summary(lm.mod)
+anova(lm.mod)
+confint(lm.mod)
+```
+```{r}
+newdata <- data.frame(hours=5:10)
+cbind(newdata, predict(lm.mod, newdata, interval='confidence'))
+cbind(newdata, predict(lm.mod, newdata, interval='prediction'))
+```
+
+```{r}
+# download.file(url = 'http://evansresearch.us/DSC/Spring2017/ECMT/Code/ecmtUtil.R', destfile = './code/ecmUtil.R')
+source('./code/ecmUtil.R')
+addCIPI2Plot(data$hours, data$fuel)
+```
+
+# CMO8
+### Dummy variables
+Dummy variables represent qualitative (categorical) characteristics. We define
+\[ 
+D = 
+\begin{cases}
+  1 &\text{ if the characteristic is observed} \\
+  0 &\text{ otherwise}
+\end{cases}
+\]
+Dummy variable trap (including separate features for both D and ~D in the model) can lead to perfect collinearity problem.
+
+### Functional Form
+\[ \text{linear: }\; \hat{y} = a + bx + \epsilon \]
+\[ \text{log-linear: }\; \ln{y} = a + bx + \epsilon \]
+\[ \text{linear-log: }\; y = a + b\ln{x} + \epsilon \]
+\[ \text{log-log: }\; \ln{y} = a + b\ln{x} + \epsilon \]
+\[ \epsilon = \frac{ \% \Delta{Q_d} }{ \% \Delta{P} } \approx \underbrace{ \frac{ \frac{\Delta{Q_d}}{\overline{Q}}}{\frac{\Delta{P}}{\overline{P}}} }_{\text{midpoint method}} \]
+
+```{r}
+mpg <- mtcars$mpg
+am <- mtcars$am # Dummy variable: am = 0 if auto, 1 if manual transmission
+cyl <- mtcars$cyl
+mod1 <- lm(mpg ~ am)
+summary(mod1)
+```
+```{r}
+dummy1 <- as.integer((am == 1) & (cyl == 8))
+mod2 <- lm(mpg ~ dummy1)
+summary(mod2)
+plot(dummy1, mpg)
+abline(coef(mod2))
+```
+
+### Consumption ~ Disposable.Income
+\[ Real = \frac{Nominal}{CPI} * 100 \]
+```{r}
+dfm <- read.csv("http://evansresearch.us/DSC/Spring2017/ECMT/Data/cm08YC.csv")
+str(dfm)
+y <- 100 * dfm$consump / dfm$cpi
+x <- 100 * dfm$dispinc / dfm$cpi
+summary(lm(y ~ x))
+ly <- log(y)
+lx <- log(x)
+summary(lm(ly ~ lx))
+```
+
+# Multiple Regression
+## Gauss-Markov Assumptions
+1. Linear in parameters 
+$$
+\begin{aligned}
+y &= \beta_0 + \sum{B_ix_i} + \epsilon \\
+\ln(y) &= \beta_0 + \sum{B_ix_i} + \sum{B_j\ln(x_j)} + \epsilon \\
+\end{aligned}
+$$
+But we can **NOT** have $y = \beta_0\cdot\beta_1 + \beta_1^2 \cdot x_1$ or the like.  
+2. Random Sample $(x_i, y_i)$
+3. Zero Conditional Mean \[ E(\epsilon_i|x_i) = 0 \]
+4. No perfect collinearity (between any of the regressors)
+    - example that fails this test: 
+      \[ \text{height}_{women} = \beta_0 + \beta_1 \cdot \text{age}_{years} + \beta_2 \cdot \text{age}_{months} + \epsilon \]
+5. Constant Variance \[ \mathrm{VAR}(\epsilon \vert x_i) = \sigma^2 \]
+6. No Serial Correlation ("Auto-Correlation") \[ \mathrm{COV}(\epsilon_i, \epsilon_j) = 0 \]
+
+Assumptions 5 and 6 are referred together as the **Spherical Assumptions**.
+
+## Global F-Test
+$$
+\begin{aligned}
+H_0 &: \beta_1 = \beta_2 = \ldots = \beta_n = 0 \\
+H_1 &: \neg H_0 \\
+\text{test statistic (TS): } F &= \frac{MSR}{MSE} \\
+\alpha &= \mathrm{signif}(5\%) \\
+\mathrm{Reject} H_0 \text{ if } F &> F_{crit, \alpha} \\
+F_{crit}: & \text{ numerator df = K = # of independent vars} \\
+& \text{ denominator df = N - (K + 1) = # of observations} \\
+\end{aligned}
+$$
+### Analysis of Variance
+
+|           | SS  | df    | MS = SS / df
+---         | --- | ---   | ---
+Regression  | SSR | k     | MSR = SSR / df
+Error       | SSE | n - k - 1 | MSE = SSE / df
+Total       | SST | n - 1 |
+
+\[ R^2 = \frac{SSR}{SST} \]
+\[ S_{y|x} = \sqrt{MSE} \]
+
+### Multi-collinearity
+#### Symptoms  
+* independent variables not significant yet they should be good predictors
+* parameter estimates with reversed signs than what we expected
+* adding/removing variables leads to substantial changes in other parameter estimates  
+
+#### Determination
+* correlation coefficient between predictors has large magnitude: $|r| > 0.7$
+* **Variance Inflation Factor (VIF)**: $\mathrm{VIF} = \frac{1}{1 - R_j^2}$ where $j$ is each random variable
+\[ y = \beta_0 + \sum{\beta_ix_i} \]
+\[ x_1 = \alpha_0 + \sum_{i \neq 1}{\alpha_ix_i} \]
+\[ R_1^2 \implies \mathrm{VIF}_1 = \frac{1}{1-R_1^2} \]
+\[ R_2^2 \implies \mathrm{VIF}_2 = \frac{1}{1-R_2^2} \]
+
+**Iterative Elimination of Offensive Variables**
+1. For each independent variable, calculate `VIF`.
+2. Ask the question: Are all `VIF`s < 10? If yes, then quit. Otherwise, continue.
+3. Remove $\underset{x_i}{\mathrm{argmax}}(VIF_{i})$
+4. Return to Step 1.
+
+```{r}
+df <- read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/sp500.csv')
+# SP500: S&P500 index
+# TB3MS: 3-month treasury bill (%)              (Hypoth: - parameter)
+# NAPMNOI: new manufacturing orders (index)     (Hypoth: + parameter)
+# INDPRO: industrial production (index)         (Hypoth: + parameter)
+# M1: money supply                              (Hypoth: + parameter)
+# HSTART: new house construction (in thousands) (Hypoth: + parameter)
+# WEARN: average weekly earnings                (Hypoth: - parameter)
+# PPI: producer price index (index)             (Hypoth: - parameter)
+str(df)
+dates <- df$YYYY.MM.DD
+df$YYYY.MM.DD <- NULL
+```
+```{r}
+mod1 <- lm(SP500 ~ ., df)
+summary(mod1)
+```
+```{r, fig.height=6, fig.width=6}
+require(corrplot)
+cor1 <- cor(df)
+kable(cor1)
+corrplot(cor1)
+```
+```{r}
+crPlots(mod1)
+hccm(mod1)
+```
+```{r}
+df.x <- df[,setdiff(colnames(df), 'SP500')]
+mod2 <- lm(TB3MS ~ ., df.x)
+r2 <- summary(mod2)$r.squared
+vif_tb <- 1 / (1-r2)
+vif_tb
+```
+```{r}
+# Using car package's vif method
+require(car)
+xy <- df
+vif <- vif(mod1); vif
+while (sort(vif, decreasing = T)[1] >= 10) {
+  removeMe <- names(sort(vif, decreasing = T)[1])
+  xy <- xy[,setdiff(colnames(xy), removeMe)]
+  mod2 <- lm(SP500 ~ ., xy)
+  vif <- vif(mod2); vif
+}
+vif
+summary(mod2)
+```
+```{r}
+require(lubridate)
+dates <- ymd(dates)
+training_idx <- which(dates < '2015-01-01')
+train.xy <- xy[training_idx,]
+test.xy <- xy[-training_idx,]
+mod3 <- lm(SP500 ~ ., train.xy)
+summary(mod3)
+# Estimate of PPI changes signs and becomes statistically insignificant 
+# When we built model on limited training data. So just drop it from model for now
+mod3 <- lm(SP500 ~ TB3MS + NAPMNOI + INDPRO + HSTART, train.xy)
+preds <- predict(mod3, test.xy)
+test.results <- cbind(preds, test.xy)
+test.rmse <- sqrt(mean((test.results$preds - test.results$SP500)^2))
 ```
 
