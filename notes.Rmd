@@ -12,7 +12,7 @@ ouptut:
 ---
 ```{r setup}
 library(knitr)
-opts_knit$set(root.dir='~/Google Drive/Dalton State College/2017 Spring/ECON-4101-Applied-Econometrics/')
+# opts_knit$set(root.dir='~/Google Drive/Dalton State College/2017 Spring/ECON-4101-Applied-Econometrics/')
 opts_chunk$set(cache = T)
 ```
 
@@ -325,6 +325,7 @@ kable(cor1)
 corrplot(cor1)
 ```
 ```{r}
+require(car)
 crPlots(mod1)
 hccm(mod1)
 ```
