@@ -366,3 +366,67 @@ test.results <- cbind(preds, test.xy)
 test.rmse <- sqrt(mean((test.results$preds - test.results$SP500)^2))
 ```
 
+# Model Specification
+**Importance**: a misspecified model --> biased estimators  
+Types of misspecification:  
+  1. ommitted variable (very bad --> biased estimators)  
+    Hypothesis:
+    \[ y = \beta_0 + \beta_1x_1 + \beta_2x_2 + \epsilon \]
+    where $y = \text{Wage}$, $x_1 = \text{Education}$, and $x_2 = \text{Ability}$
+    Econometrics Model:
+    \[ \hat{y} = \hat{\beta_0} + \hat{\beta_1}x_1 + \hat{\beta_2}x_2 + \epsilon \]
+    We expect: $E[\beta_i] = \beta_i$ and $E[\epsilon] = 0$
+    However, ability ($x_2$) may be hard/impossible to collect data on, so we might choose to omit $\beta_2$ term. So our adjusted model is:
+    \[ \tilde{y} = \tilde{\beta_0} + \tilde{\beta_1}x_1 + \mu \]
+    The question we must ask is: When is $\tilde{\beta_1}$ consistent? i.e. $E[\tilde{\beta_1}] = E[\hat{\beta_1}] = \beta_1$? This is the case when 
+    \[ \tilde{\beta_1} = \hat{\beta_1} + \beta_2\frac{x_2}{x_1} \equiv \hat{\beta_1} + \beta_2 \delta \]
+    \[ E[\tilde{\beta_1}] = E[\hat{\beta_1} + \hat{\beta_2} \delta] = \beta_1 + \beta_2\delta \]
+    So we need $\delta = \frac{x_2}{x_1} = 0$.  
+  2. too many variables (not good, but not too bad --> impacts variance of model)  
+  3. Functional form (incorrect f.f. --> biased estimators)  
+
+### Ramsey RESET Test (omitted variables test)
+\[ H_0: \text{All the omitted variables = 0 (i.e. we have the correct test)} \]
+\[ H_1: \text{At least one omitted variable} \neq 0 \]
+\[ \text{TS: } F \]
+Critical region: Reject $H_0$ when $F > F_{crit}$
+
+```{r}
+dfm <- read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/burger78.csv')
+# tr = total receipts (in thousaands of $)
+# p = price (in $)
+# a = advertising costs (in thousands of $)
+summary(dfm)
+# Theory: tr = f(p, a)
+# Econometrics model: tr = b0 + b1*p + b2*a + e
+# Hypothesis: b1 < 0 and b2 > 0
+cor(dfm$p, dfm$a) # not too correlated, so we're okay
+```
+```{r}
+lm.fit <- lm(tr ~ p + a, data = dfm)
+summary(lm.fit)
+yhat <- lm.fit$fitted.values
+yhat2 <- yhat^2
+yhat3 <- yhat^3
+```
+```{r}
+# rrt = ramsey reset test
+# tr.hat = b0.hat + b1.hat*p + b2.hat*a + b3.hat*yhat2 + b4.hat*yhat3 + e
+lm.rrt.fit <- lm(tr ~ p + a + yhat2 + yhat3, data = dfm)
+summary(lm.rrt.fit)
+```
+```{r}
+# We want to test whether b3 = b4 = 0 for the higher-order yhat terms in the model 
+anova(lm.fit)
+anova(lm.rrt.fit)
+anova(lm.fit, lm.rrt.fit) # anova(restricted, unrestricted)
+# Since the p-value is not signficant at the 5% significance level, we are okay with omitting the higher order terms from the model.
+```
+
+### Box-Cox Test (functional form test)
+\[ H_0: \text{Models are systematically similar} \]
+\[ H_1: \neg H_1 \]
+\[ \text{TS: } \theta = \frac{N}{2} \left| \ln{\frac{SSE_{\text{linear}}/\tilde{y_1}}{SSE_{\text{log}}}} \right| \sim \chi_1^2 \]
+where $\tilde{y_1}$ is the geometric mean of the ith model.
+\[ \text{Signficance: } \alpha = 0.05 \]
+Critical region: Reject $H_0$ when $\theta > \chi_1$
