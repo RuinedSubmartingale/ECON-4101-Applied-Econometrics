@@ -1,0 +1,3 @@
+# as per https://stackoverflow.com/questions/39752867/git-ignore-trailing-whitespace-in-markdown-files-only
+# attempt at ignoring trailing whitespace warning messages for markdown files
+**/*.md  whitespace=space-before-tab
