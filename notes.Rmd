@@ -507,7 +507,7 @@ Q = Output, L = Labor, K = Capital
 \[ \iff \ln{Q} = \ln{A} + \alpha\ln{L} + \beta\ln{K} \equiv \beta_0 + \beta_1\ln{L} + \beta_2\ln{K} \]
 \[ \text{Restriction: } \alpha + \beta = 1 \iff \beta_1 + \beta_2 = 1 \]
 \[ \implies \ln{Q} = \beta_0 + (1-\beta_2)\ln{L} + \beta_2\ln{K} \]
-\[ \ln{Q} - \ln{L} = \beta_0 + \beta_2(\ln{K} - \ln{Q}) \]
+\[ \ln{Q} - \ln{L} = \beta_0 + \beta_2(\ln{K} - \ln{L}) \]
 
 ```{r}
 # y = total receipts, x1 = price, x2 = advertising, x3 = x2^2
