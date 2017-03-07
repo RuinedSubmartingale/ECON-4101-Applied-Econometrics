@@ -391,6 +391,12 @@ Types of misspecification:
 \[ \text{TS: } F \]
 Critical region: Reject $H_0$ when $F > F_{crit}$
 
+
+##### F Statistic
+\[ F = \frac{(SSE_R - SSE_U)/q}{SSE_U/(n-k-1)}\]
+\[ F \sim F_{\alpha,\; q,\; n - k - 1} \]
+where $SSE_R$ is for restricted model and $SSE_U$ is for unrestricted model, and $q$ = number of restrictions, and $k$ is the number of terms in the unrestricted model.
+
 ```{r}
 dfm <- read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/burger78.csv')
 # tr = total receipts (in thousaands of $)
@@ -403,30 +409,194 @@ summary(dfm)
 cor(dfm$p, dfm$a) # not too correlated, so we're okay
 ```
 ```{r}
-lm.fit <- lm(tr ~ p + a, data = dfm)
-summary(lm.fit)
-yhat <- lm.fit$fitted.values
+lm.restricted <- lm(tr ~ p + a, data = dfm)
+summary(lm.restricted)
+yhat <- lm.restricted$fitted.values
 yhat2 <- yhat^2
 yhat3 <- yhat^3
+yhat2i <- yhat^-2
+yhat3i <- yhat^-3
 ```
 ```{r}
 # rrt = ramsey reset test
 # tr.hat = b0.hat + b1.hat*p + b2.hat*a + b3.hat*yhat2 + b4.hat*yhat3 + e
-lm.rrt.fit <- lm(tr ~ p + a + yhat2 + yhat3, data = dfm)
-summary(lm.rrt.fit)
+lm.unrestricted <- lm(tr ~ p + a + yhat2 + yhat3 + yhat2i + yhat3i, data = dfm)
+summary(lm.unrestricted)
 ```
 ```{r}
 # We want to test whether b3 = b4 = 0 for the higher-order yhat terms in the model 
-anova(lm.fit)
-anova(lm.rrt.fit)
-anova(lm.fit, lm.rrt.fit) # anova(restricted, unrestricted)
+anova(lm.restricted)
+anova(lm.unrestricted)
+anova(lm.restricted, lm.unrestricted) # anova(restricted, unrestricted)
 # Since the p-value is not signficant at the 5% significance level, we are okay with omitting the higher order terms from the model.
+```
+```{r}
+n = nrow(dfm)
+q = 4
+k = 6
+sse.r <- anova(lm.restricted)$`Sum Sq`[k - q + 1]; sse.r
+sse.u <- anova(lm.unrestricted)$`Sum Sq`[k + 1]; sse.u
+f.num <- (sse.r - sse.u)/q
+f.denom <- sse.u/(n - k - 1)
+f.stat <- f.num / f.denom
+pf(f.stat, q, n - k - 1, lower.tail = F)
+fcrit <- qf(.05, q, n - k - 1, lower.tail = F)
+cat(fcrit)
+cat(f.stat)
 ```
 
 ### Box-Cox Test (functional form test)
-\[ H_0: \text{Models are systematically similar} \]
+\[ H_0: \text{No difference in functional form (linear or log-log). i.e. Models are systematically similar} \]
 \[ H_1: \neg H_1 \]
-\[ \text{TS: } \theta = \frac{N}{2} \left| \ln{\frac{SSE_{\text{linear}}/\tilde{y_1}}{SSE_{\text{log}}}} \right| \sim \chi_1^2 \]
-where $\tilde{y_1}$ is the geometric mean of the ith model.
+\[ \text{TS: } \theta = \frac{N}{2} \left| \ln{\frac{SSE_{\text{linear}}/\nu^2}{SSE_{\text{log}}}} \right| \sim \chi_1^2 \]
+where $\nu$ is the geometric mean of the dependent variable
 \[ \text{Signficance: } \alpha = 0.05 \]
-Critical region: Reject $H_0$ when $\theta > \chi_1$
+Critical region: Reject $H_0$ when $\theta > \chi_1$  
+If you reject, you choose the model that has $MIN \{ \frac{SSE_L}{\nu^2}, SSE_{LL}\}$
+
+```{r}
+dfm <- dfm[, c('tr', 'p', 'a')]
+dfm.ll <- data.frame(sapply(dfm, log))
+n <- nrow(dfm)
+
+mod.l <- lm(tr ~ p + a, dfm)
+mod.ll <- lm(tr ~ p + a, dfm.ll)
+
+nu <- exp(mean(dfm.ll$tr)) # geometric mean
+nu.sq <- nu^2; nu.sq
+sse.l <- anova(mod.l)$`Sum Sq`[3]; sse.l
+sse.ll <- anova(mod.ll)$`Sum Sq`[3]; sse.ll
+
+iota <- n / 2 * abs( log( (sse.l/nu.sq)/sse.ll ) ); iota
+iota.crit <- qchisq(.05, df = 1, lower.tail = F); iota.crit
+iota > iota.crit
+t <- sse.l / nu.sq; t
+
+if (t < sse.ll) {
+  cat('go with linear model')
+} else {
+  cat('go with log-log model')
+}
+```
+
+# 2/27/2017
+```{r}
+# runs = b0 + b1*age[-] + b2*games[+] + b3*hits[+] + b4*walks[+] + b5*avg[+]
+# where feature[+/-] indicates the sign we expect its coefficient to be
+dfm <- read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/astrohitters.csv')
+summary(dfm)
+```
+```{r}
+lm.unrestricted <- lm(runs ~ Age + games + hits + walks + avg, dfm)
+lm.restricted <- lm(runs ~ hits + walks, dfm)
+summary(lm.unrestricted)
+summary(lm.restricted)
+anova(lm.restricted, lm.unrestricted) # ommitted terms appear isignificant
+```
+
+# 3/1/2017
+```{r}
+dfm <- read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/burger78.csv') # variables explained earlier above
+```
+Our naive model was $tr = \beta_0 + \beta_1p + \beta_2a$, but we expect the positive effect of advertising to taper off eventually. So we adjust our model to be$tr = \beta_0 + \beta_1p + \beta_2a + \beta_3a^2$, where we expect $\beta_3 < 0$.Then $\frac{dtr}{da} = \beta_2 + 2\beta_3a$. Setting this equal to 1, we get $a = \frac{1-\beta_2}{2\beta_3}$ as our estimate of when a \$1000 increase of advertising yields a \$1000 increase of total receipts. Substituting back into our model, we get $tr = \beta_0 + \beta_1p + (1-2\beta_3a)a + \beta_3a^2$, and so $tr - a = \beta_0 + \beta_1p - \beta_3a^2$. In doing so, we have imposed a restriction on our model. If your restriction doesn't truly reflect reality,
+then your estimates will be biased. If they do, then it's good.
+
+#### Cobb-Douglas Production
+Q = Output, L = Labor, K = Capital
+\[ Q = A L^\alpha K^\beta \]
+\[ \iff \ln{Q} = \ln{A} + \alpha\ln{L} + \beta\ln{K} \equiv \beta_0 + \beta_1\ln{L} + \beta_2\ln{K} \]
+\[ \text{Restriction: } \alpha + \beta = 1 \iff \beta_1 + \beta_2 = 1 \]
+\[ \implies \ln{Q} = \beta_0 + (1-\beta_2)\ln{L} + \beta_2\ln{K} \]
+\[ \ln{Q} - \ln{L} = \beta_0 + \beta_2(\ln{K} - \ln{Q}) \]
+
+```{r}
+# y = total receipts, x1 = price, x2 = advertising, x3 = x2^2
+# yhat = b0hat + b1hat x1 + b2hat x2 + b3hat x3
+dfm$asq <- dfm$a^2
+mod1 <- lm(tr ~ p + a + asq, data = dfm)
+summary(mod1)
+```
+\[ \frac{\partial \hat{y}}{\partial a} = \hat{\beta_2} + 2\hat{\beta_3}a \]
+\[ 1 = \frac{\partial \hat{y}}{\partial a} \implies \frac{1-\beta_2}{2\beta_3}\]
+```{r}
+b2 <- mod1$coefficients[3]
+b3 <- mod1$coefficients[4]
+(1-b2)/(2*b3)
+```
+What if management said they thought $a = 40$ was optimal. How would you test this?
+\[ H_0: \beta_1 + 2\beta_3(40) = 1 \]
+\[ H_0: \beta_1 + 2\beta_3(40) \neq 1\]
+\[ tr = \beta_0 + \beta_1p + \beta_2a + \beta_3a^2 \]
+\[ tr = \beta_0 + \beta_1p + (1 - 80\beta_3)a + \beta_3a^2 \]
+\[ tr - a = \beta_0 + \beta_1p + \beta_3(a^2 - 80a) \]
+Let $z = tr - a$, $x_1 = p$, $x_2 = a^2 - 80a$.
+Then our restricted model can be written as $z = \beta_0 + \beta_1x + \beta_3x_2$
+```{r}
+tr <- dfm$tr - dfm$a
+p <- dfm$p
+asq <- dfm$asq - 80*dfm$a
+mod2 <- lm(tr ~ p + asq)
+summary(mod2)
+anova(mod2, mod1)
+```
+
+# 3/6/2017
+```{r}
+dfm <- read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/goodyear.csv')
+# price: $1000's
+# size: sqft
+# bedrooms: levels
+# baths: levels
+str(dfm)
+```
+```{r}
+mod1 <- lm(price ~ bedrooms + size + baths, dfm)
+summary(mod1)
+```
+```{r}
+# What's the marginal change in price for an additional 1 bedroom that is 500 sqft?
+coefs <- mod1$coefficients
+theta <- sum(coefs * c(0,1,500,0)) # estimate of this marginal cost
+theta
+```
+
+So we've essentially enforced the following restriction onto the model: $\beta_1 + 500\beta_2 = \theta$ = `r theta`, or equivalently, $\beta_1 = \theta - 500\beta_2$. So our new model is \[ \text{price} = \beta_0 + \theta\text{bedrooms} + \beta_2(\text{size} - 500\cdot\text{bedrooms}) + \beta_3\text{baths} \]
+```{r}
+junk <- dfm$size - 500*dfm$bedrooms
+mod2 <- lm(price ~ bedrooms + junk + baths, dfm)
+summary(mod2)
+mod2$coefficients['bedrooms']
+```
+As expected, $\theta$ = `r mod2$coefficients['bedrooms']`. We can now form a 95% confidence interval on $\theta$
+
+```{r}
+confint(mod2)
+```
+
+Now lets add some additional features to our model:
+```{r}
+# unrestricted model
+mod1 <- lm(price ~ bedrooms + size + baths + garage + pool, dfm)
+summary(mod1)
+
+# estimate of theta:
+theta2 <- sum(mod1$coefficients * c(0,1,500,0,0,0))
+theta2
+
+# restricted model
+mod3 <- lm(price ~ bedrooms + junk + baths + garage + pool, dfm)
+summary(mod3)
+```
+
+As expected, $\theta_2$ = `r mod3$coefficients['bedrooms']`. We can now form a 95% confidence interval on $\theta_2$
+```{r}
+confint(mod3)
+```
+We can also add the township variable to our model by first converting it into a factor variable so that the linear model uses 4 dummy variables (there are 5 unique townships, so 5 - 1 = 4).
+```{r}
+dfm$township <- factor(dfm$township)
+mod1 <- lm(price ~ bedrooms + size + baths + garage + pool + township, dfm)
+summary(mod1)
+```
+
+
