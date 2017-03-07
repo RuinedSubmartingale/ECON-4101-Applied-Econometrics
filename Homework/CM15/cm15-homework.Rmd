@@ -1,0 +1,70 @@
+---
+title: |
+  | ECON 4101 Econometrics
+  | CM15 Homework
+author: "Pranav Singh"
+date: "March 5, 2017"
+output: pdf_document
+# output: html_document
+# output: github_document
+---
+
+```{r, include=F}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=80),tidy=T)
+options(scipen=999)
+
+library(ggplot2)
+library(gridExtra)
+require(data.table)
+theme_set(theme_bw())
+```
+
+```{r}
+data <- fread('cobb_douglas_data.txt')
+data[, Year := as.Date(paste0(Year, '-01-01'))]
+attach(data)
+```
+
+We model the data using a transformation of the Cobb-Douglas production function:
+\[ \ln{Q} = \ln{A} + \alpha\ln{L} + \beta\ln{K} \]
+where $Q$ = output, $L$ = labor, $K$ = capital, and $A$ = constant.
+
+```{r}
+log.Output <- log(Output)
+log.Labor <- log(Labor)
+log.Capital <- log(Capital)
+mod1 <- lm(log.Output ~ log.Labor + log.Capital)
+summary(mod1)
+confint(mod1)
+```
+```{r, include=F}
+coefs.orig <- coef(mod1)
+coefs.orig
+```
+
+The assumption of constant returns to scale requires that $\alpha + \beta = 1$. We test this assumption using the following restricted least squares framework:
+\[
+\begin{aligned}
+\text{Original Model: } & \ln{Q} = \ln{A} + \alpha\ln{L} + \beta\ln{K} \\
+\text{Restriction: } & \alpha + \beta = 1 \\
+\implies & \ln{Q} = \ln{A} + (1-\beta)\ln{L} + \beta\ln{K} \\
+\implies & \ln{Q} - \ln{L} = \ln{A} + \beta(\ln{K} - \ln{L})
+\end{aligned}
+\]
+```{r}
+log.Output <- log.Output - log.Labor
+log.Capital <- log.Capital - log.Labor
+mod2 <- lm(log.Output ~ log.Capital)
+summary(mod2)
+```
+
+```{r}
+beta <- mod2$coefficients['log.Capital']
+alpha <- 1 - beta
+ratio <- Output/(Labor^alpha * Capital^beta)
+h <- exp(mod2$coefficients['(Intercept)'])
+ggplot() + geom_line(aes(x = Year, y = ratio)) + geom_hline(aes(yintercept = h), linetype = 'dashed')
+```
+
+
