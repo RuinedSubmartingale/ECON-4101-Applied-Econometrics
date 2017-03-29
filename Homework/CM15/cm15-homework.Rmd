@@ -38,12 +38,40 @@ mod1 <- lm(log.Output ~ log.Labor + log.Capital)
 summary(mod1)
 confint(mod1)
 ```
+
+One way to test the hypotheses
+\[ 
+H_0 \; : \; \alpha + \beta = 1 \\
+H_1 \; : \; \alpha + \beta \neq 1 
+\]
+would be to use the t-statistic:
+\[ t_{\hat{\alpha} + \hat{\beta}} = \frac{(\hat{\alpha} + \hat{\beta}) - 1}{\text{se}(\hat{\alpha} + \hat{\beta})} \]
+We can get the standard error from the covariance matrix of the estimators of the unrestricted fitted model as follows:
+\[ \text{se}(\hat{\alpha} + \hat{\beta}) = \sqrt{\widehat{\text{VAR}}(\hat{\alpha} + \hat{\beta})} 
+                                         = \sqrt{\widehat{\text{VAR}}(\hat{\alpha}) + \widehat{\text{VAR}}(\hat{\beta}) + 2\widehat{\text{COV}}(\hat{\alpha}, \hat{\beta})} \]
+```{r}
+vcov.params <- vcov(mod1)
+vcov.params
+se <- sqrt(vcov.params['log.Labor','log.Labor'] + vcov.params['log.Capital', 'log.Capital'] + 2*vcov.params['log.Labor', 'log.Capital'])
+t.stat <- unname((mod1$coefficients['log.Labor'] + mod1$coefficients['log.Capital'] - 1)/se)
+cat('t statistic: ', t.stat)
+n <- nrow(data)
+k <- 3
+t.crit <- qt(.975, n - k)
+cat('t critical value: ', t.crit)
+pval <- pt(t.stat, df = n - k, lower.tail = F)
+cat('p-value: ', pval)
+```
+
+
 ```{r, include=F}
 coefs.orig <- coef(mod1)
 coefs.orig
 ```
+The above test indicates we cannot reject the assumption that $\alpha + \beta = 1$, at least at the 95% confidence level.
 
-The assumption of constant returns to scale requires that $\alpha + \beta = 1$. We test this assumption using the following restricted least squares framework:
+Another way to test the assumption of constant returns to scale would be to use a restricted least squares framework as follows:
+
 \[
 \begin{aligned}
 \text{Original Model: } & \ln{Q} = \ln{A} + \alpha\ln{L} + \beta\ln{K} \\
@@ -58,6 +86,15 @@ log.Capital <- log.Capital - log.Labor
 mod2 <- lm(log.Output ~ log.Capital)
 summary(mod2)
 ```
+
+We use the F-statistic from the Ramsey RESET Test to compare our restricted and unrestricted models:
+\[ F = \frac{(SSE_R - SSE_U)/q}{SSE_U/(n-k-1)}\]
+\[ F \sim F_{\alpha,\; q,\; n - k - 1} \]
+where $SSE_R$ is for restricted model and $SSE_U$ is for unrestricted model, and $q$ = number of restrictions, and $k$ is the number of terms in the unrestricted model. An `anova` summary of the two models generates our F-statistic value:
+```{r}
+anova(mod2, mod1)
+```
+The insignificant p-value here corroborates our earlier finding that we cannot reject the assumption of constant returns to scale. Our findings here match those of Felipe [2005]. It is important to note, as the authors go to great lengths to explain, that these findings should not be interpreted as support for the inferential capabilities of the Cobb-Douglas production function. Rather, the authors offer a convincing argument that "all estimations of aggregate production functions do is to reproduce the distribution income accounting identity."
 
 ```{r}
 beta <- mod2$coefficients['log.Capital']
