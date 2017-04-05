@@ -599,4 +599,325 @@ mod1 <- lm(price ~ bedrooms + size + baths + garage + pool + township, dfm)
 summary(mod1)
 ```
 
+# 3/8/2017
+\[ y = \beta_0 + \beta_1x + \gamma_0D + \gamma_1(Dx) \]
+\[ E[y] = (\beta_0 + \gamma_0) + (\beta_1 + \gamma_1)x \quad \text{when } D = 1 \]
+\[ E[y] = \beta_0 + \beta_1x \quad \text{when } D = 0 \]
+
+$\gamma_0$ represents a vertical shift of the intercept term in the model graph, and $\gamma_1$ represents a shift of the first order term slope estimate.
+
+CM17 hwk  
+inv = b0 + b1*v + b2*k  
+### Chow Test
+H0: models are the same, (we can pool the data)  
+H1: not H0, (we need to estimate models separately)  
+F statistic = [ (SSE_r - SSE_u) / q ] / [ SSE_u / n - k - 1] ~ F_alpha, q, n - k - 1 ... where q is the number of restrictions, and k is the number of independent variables in the unrestricted model.
+Reject H0: if F > F_crit
+```{r}
+source('cm17chow.R')
+```
+```{r}
+# CM17 hwk
+# Restricted models (separately):
+# GE: y_g = b0 + b1*g1 + b2*g2
+# WE: y_w = c0 + c1*w1 + c2*w2
+
+# Unrestricted model:
+# D = 0 if GE, else 1 if WE
+# x = UNION(GE data, WE data)
+# y = b0 + b1*x1 + b2*x2 + c0*D + c1*(D*x1) + c2*(x2)
+# y = { 
+#     (b0 + c0) + (b1 + c1)x1 + (b2 + c2)x2     if D = 1 (unrestricted)
+#     b0 + b1*x1 + b2*x2                        if D = 0 (restricted)
+# }
+require(data.table)
+dt <- as.data.table(read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/gewe.csv'))
+dt <- melt.data.table(dt, id.vars = 'X', measure=patterns('i_', 'v_', 'k_'), variable.name = 'dummy', value.name = c('investment', 'value', 'capital'))
+str(dt)
+```
+
+# 3/20/2017
+## Heteroskedasticity
+
+- refers to the circumstance in which the variability of a variable is unequal across the range of values of a second variable that predicts it.
+- a linear model is no longer the best linear unbiased estimator
+- causes the standard errors to be incorrect (too wide) --> confidence intervals are incorrect (biased) --> we're unable to make statistical inference using standard errors
+
+#### Identification
+
+1. Visually (plotting `e ~ x`)
+2. Formally (Goldfeld-Quandt Test)
+
+#### Making corrections to the standard error
+
+1. White's Approximation
+
+```{r}
+# download.file('http://evansresearch.us/DSC/Spring2017/ECMT/Code/cm18.1_hsked.R', 'cm18.1_hsked.R')
+# download.file('http://evansresearch.us/DSC/Spring2017/ECMT/Data/wfe.csv', 'wfe.csv')
+
+# y = 40.8 + 0.13x + u
+# E[u] = 0
+# u ~ N(0, 37.8)
+source('cm18.1_hsked.R')
+```
+
+Homoskedasticity - expect $\hat{\sigma_t} = \sigma$  
+Heteroskedasticity - expect $\hat{\sigma_t} = \sigma \cdot x$
+
+#### Goldfeld-Quandt Test
+\[
+GQ = \frac{SE_1}{SE_2} \sim F_{\alpha, n-1, n-1} \\
+H_0: \text{Homoskedastic errors} \\
+H_1: \text{Heteroskedastic errors}
+\]
+
+```{r, cache = F}
+midinc <- median(income)
+dfm <- data.frame(income, food)
+dfm <- dfm[order(income),]
+dfm.upper <- dfm[dfm$income > midinc,]
+dfm.lower <- dfm[dfm$income <= midinc,]
+mod.upper <- lm(dfm.upper$food ~ dfm.upper$income)
+var.upper <- (summary(mod.upper)$sigma)^2 # variance of upper partition
+mod.lower <- lm(dfm.lower$food ~ dfm.lower$income)
+var.lower <- (summary(mod.lower)$sigma)^2 # variance of lower partition
+# summary(mod.upper)
+# summary(mod.lower)
+
+GQ.stat <- var.upper / var.lower; GQ.stat
+df1 <- nrow(dfm.upper) - 2
+df2 <- nrow(dfm.lower) - 2
+fcrit <- qf(.05, df1, df2); fcrit
+p <- pf(GQ.stat, df1, df2, lower.tail = F); p
+```
+
+```{r}
+invisible(require(lmtest))
+gqtest(food ~ income)
+
+# woolrdige Goldfeld-Quandt Test
+mod1 <- lm(food ~ income)
+e <- mod1$residuals
+e2 <- e^2
+summary(lm(e2 ~ income))
+```
+
+
+#### White's Approximation for calculating robust standard errors
+```{r}
+invisible(require(car))
+# White's Corrected Covariance Matrix
+uncorrected_errors <- summary(mod1)$coefficients[,2]; uncorrected_errors
+wccm <- hccm(mod1)
+whites_corrected_errors <- sqrt(diag(wccm)); whites_corrected_errors
+wccm.hc0 <- hccm(mod1, type='hc0')
+whites_corrected_errors_hc0 <- sqrt(diag(wccm.hc0)); whites_corrected_errors_hc0
+
+uncorrected_confint <- confint(mod1); uncorrected_confint
+
+param_estimates <- mod1$coefficients
+t.crit <- qt(.975, df=38); t.crit
+corrected_confint <- (whites_corrected_errors_hc0 %*% t(t.crit*c(-1,1))) * param_estimates; corrected_confint
+```
+
+```{r}
+require(sandwich)
+require(lmtest)
+coeftest(mod1, vcov. = vcovHC(mod1, 'HC0'))
+coefci(mod1, vcov. = vcovHC(mod1, 'HC0'))
+```
+
+# 3/27/2013
+y = food expenditure  
+x0 = vector of 1s
+x1 = income
+If errors are homoskedastic, $y = \beta_0x_0 + \beta_1x_1 + e$
+
+## Generalized Least Squares
+\[ y^* = \frac{y}{\sqrt{x}} \;,\; x_0^* = \frac{x_0}{\sqrt{x}} \;,\; x_1^* = \frac{x_1}{\sqrt{x}} \;,\; e^* = \frac{e}{\sqrt{x}} \]
+\[ y^* = \beta_0 x_0^* + \beta_1 x_1^* + e^* \]
+
+By making the above correction, we ensure errors are homoskedastic. This yields valid standard errors, and consequently valid confidence intervals and valid inferences (i.e. hypothesis tests).
+
+```{r}
+dfm.wfe <- read.csv('wfe.csv')
+```
+```{r}
+mod1 <- lm(food ~ income, dfm.wfe)
+param_estimates <- mod1$coefficients; param_estimates
+errors <- summary(mod1)$coefficients[,2]; errors
+rse <- summary(mod1)$sigma; rse
+```
+```{r}
+# Generalized Least Squares Weight
+w <- 1 / sqrt(dfm.wfe$income)
+food.w <- dfm.wfe$food * w
+income.w <- dfm.wfe$income * w
+const <- w
+mod.w <- lm(food.w ~ 0 + const + income.w)
+param_estimates.w <- mod.w$coefficients; param_estimates
+errors.w <- summary(mod.w)$coefficients[,2]; errors.w
+rse.w <- summary(mod.w)$sigma
+```
+
+```{r}
+# 1. Estimate food ~ income for each partition: obss: 1-20, 21-40
+# 2. save the errors from each regression --> e
+# 3. calculate the standard deviation of the errors: --> sd(e)
+# 4. transform the variables in each partitions with their 
+#     respective standard deviation
+# 5. OLS on the transformed variables
+
+attach(read.csv('wfe.csv'))
+# first partition...
+y <- food[1:20]
+x <- income[1:20]
+mod1 <- lm(y ~ x)
+e1.sd <- sd(mod1$residuals)
+food.1 <- y / e1.sd
+income.1 <- x / e1.sd
+# second partition...
+y <- food[21:40]
+x <- income[21:40]
+mod2 <- lm(y ~ x)
+e2.sd <- sd(mod2$residuals)
+food.2 <- y / e2.sd
+income.2 <- x / e2.sd
+
+# combine partitions...
+food.12 <- c(food.1, food.2)
+income.12 <- c(income.1, income.2)
+
+# create a vector for the constant
+const.12 <- rep(c(1/e1.sd, 1/e2.sd), each = 20)
+
+# GLS via transformed variables
+mod.12 <- lm(food.12 ~ 0 + const.12 + income.12)
+summary(mod.12)
+```
+```{r}
+# Easier way...
+mod.12a <- lm(food ~ income, weights = const.12^2)
+summary(mod.12)
+```
+
+### Feasible Generalied Least Squares (FGLS)
+```{r}
+# Feasible GLS (FGLS)
+mod1 <- lm(food ~ income) # assume homoskedastic errors
+summary(mod1)
+e1 <- mod1$residuals      # save the residuals
+le2 <- log(e1^2)          # log of squared errors
+mod2 <- lm(le2 ~ income)  # regress le2 on all indepenent variables
+ghat <- mod2$fitted.values # fittted le2 values from previous regression
+hhat <- exp(ghat)         # exponentiate the above fitted values
+w <- 1 / sqrt(hhat)       # weights for GLS (WLS)
+
+mod.fgls <- lm(food ~ income, weights = w^2)
+summary(mod.fgls)
+```
+
+
+# 4/3/2017
+Typical assumptions:
+\[ 
+E[\epsilon_i] = 0 \\
+VAR(\epsilon_i) = \sigma^2 \\
+COV(\epsilon_i, \epsilon_j) = 0
+\]
+
+## Auto-Correlation
+\[ \epsilon_t = \rho \epsilon_{t-1} + \mu_t \]
+If $\rho \neq 0$, then our model suffers from auto-correlation. 
+
+### Implications of auto-correlation:
+\[ 
+\epsilon_t = \rho \epsilon_{t-1} + \mu_t \\
+E[\epsilon_t] = 0 \\
+VAR[\epsilon_t] = \frac{\sigma^2}{1 - \rho^2} \\
+COV[\epsilon_t, \epsilon_{t-1}] = \rho \sigma^2 \\
+COR[\epsilon_t, \epsilon_{t-1}] = \rho \\
+\]
+
+- Estimators are still unbiased
+- standard errors are incorrect --> confidence intervals are too wide --> invalid inference
+
+```{r}
+# price (in takas)
+# area (in acres)
+df <- read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/sugarcane.csv')
+y <- df$area
+x <- df$price
+```
+
+```{r}
+ggplot() + geom_point(aes(x=x, y=y))
+y.l <- log(y)
+x.l <- log(x)
+mod1 <- lm(y.l ~ x.l)
+summary(mod1)
+```
+
+Let x = elasticity
+```{r}
+x.OLS <- summary(mod1)$coefficients[2,1]
+x.OLS.se <- summary(mod1)$coefficients[2,2]
+x.OLS.ci <- confint(mod1)[2,]
+```
+
+### Durbin-Watson Test
+\[
+H_0: \text{errors are uncorrelated} \\
+H_1: \text{errors are correlated}
+\]
+Test Statistic:
+\[ DW = \frac{\sum{(\epsilon_t - \epsilon_{t-1})^2}}{\sum{\epsilon_t^2}}\]
+
+Test Statistic Regions:
+\[ 
+DW = 2 : \text{no autocorrelation} \\
+DW < 2 : \text{positive autocorrelation} \\
+DW > 2 : \text{negative autocorrelation}
+\]
+
+```{r}
+# Durbin-Watson Test - manual way
+e <- mod1$residuals
+k <- 1
+n <- length(e)
+e.1 <- cbind(e[k:(n-k)], e[(1+k):(n-k+1)])
+# autocorrelation coefficient
+ac1 <- cor(e.1[,1], e.1[,2]); ac1
+dw1 <- sum((e.1[,1] - e.1[,2])^2)/sum(e^2); dw1
+```
+
+```{r}
+# Durbin-Watson Test - easy way
+require(lmtest)
+dwtest(mod1)
+
+# require(car)
+# durbinWatsonTest(mod1)
+```
+
+```{r}
+require(sandwich)
+coeftest(mod1)
+coeftest(mod1, vcov. = vcovHAC)
+coefci(mod1)
+coefci(mod1, vcov. = vcovHAC)
+```
+
+## Generalized Least Squares
+```{r}
+require(nlme)
+mod.gls <- gls(y.l ~ x.l, correlation = corARMA(p = 1, q = 0))
+summary(mod.gls)
+```
+
+```{r}
+plot(mod1) # Bonus: look up Cook's Distance (Residuals vs. Leverage plot)
+```
+
 
