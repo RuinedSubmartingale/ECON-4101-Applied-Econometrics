@@ -1,0 +1,48 @@
+---
+title: |
+  | ECON 4101 Econometrics
+  | CM07 Homework
+author: "Pranav Singh"
+date: "April 1, 2017"
+output: pdf_document
+# output: html_document
+# output: github_document
+---
+  
+```{r, include=F}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=80),tidy=T)
+options(scipen=999)
+
+library(ggplot2)
+library(gridExtra)
+theme_set(theme_bw())
+```
+
+```{r}
+require(data.table)
+dt <- as.data.table(read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/gewe.csv'))
+dt <- melt.data.table(dt, id.vars = 'X', measure=patterns('i_', 'v_', 'k_'), variable.name = 'dummy', value.name = c('investment', 'value', 'capital'))
+str(dt)
+
+# build restricted model
+mod.r <- lm(dt$investment ~ dt$value + dt$capital)
+
+# build unrestricted model
+value.d <- ifelse(dt$dummy == 1, dt$value, 0)
+capital.d <- ifelse(dt$dummy == 1, dt$capital, 0)
+dummy <- ifelse(dt$dummy == 1, 1, 0)
+mod.ur <- lm(dt$investment ~ dt$value + dt$capital + dummy + value.d + capital.d)
+
+# conduct a Chow Test
+res <- anova(mod.r, mod.ur); res
+```
+
+The Chow Test tests the hypotheses:
+\[
+\begin{aligned}
+H_0:& \text{ Models are the same (data can be pooled)} \\
+H_a:& \text{ Models are not the same (data should not be pooled)}
+\end{aligned}
+\]
+The p-value of `r res$'Pr(>F)'[2]` in our case suggests that we don't have sufficient evidence at the 5% significance level to advise against pooling the data; i.e. it's appropriate to combine the data.
