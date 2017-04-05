@@ -1,0 +1,35 @@
+---
+title: |
+  | ECON 4101 Econometrics
+  | CM08 Homework
+author: "Pranav Singh"
+date: "March 24, 2017"
+output: pdf_document
+# output: html_document
+# output: github_document
+---
+
+```{r, include=F}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=80),tidy=T)
+options(scipen=999)
+
+library(ggplot2)
+library(gridExtra)
+require(data.table)
+theme_set(theme_bw())
+
+require(xlsx)
+```
+
+```{r}
+df <- read.xlsx('../../Data_Woolridge/athlet1.xls', 1)
+df <- data.frame(year = df[,1], apps = df[,2], stufac = df[,6], bowl = df[,7])
+str(df)
+```
+
+```{r}
+summary(lm(log(apps) ~ log(stufac) + factor(bowl), df))
+```
+
+From the above regression analysis, we find at the 5% significance level, whether or not a university had a bowl game in the previous year has a nearly significant (it's p-value = .0516) impact on admissions ain the current year after accounting for the student-faculty ratio. The elasticity of demand for admissions using the student-faculty ratio is simply that variable's parameter estimate and is equal to -0.25978. That is, holding whether the university had a bowl game the previous year constant, a 1% increase in the student-faculty ratio corresponds to an estimated 0.25978% decrease in the applications for admissions. 
