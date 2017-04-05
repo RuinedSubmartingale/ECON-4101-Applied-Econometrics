@@ -1,7 +1,7 @@
 ---
 title: |
   | ECON 4101 Econometrics
-  | CM07 Homework
+  | CM17 Homework
 author: "Pranav Singh"
 date: "April 1, 2017"
 output: pdf_document
