@@ -921,3 +921,32 @@ plot(mod1) # Bonus: look up Cook's Distance (Residuals vs. Leverage plot)
 ```
 
 
+# 4/10/2017
+## Auto-Correlation
+```{r, code=readLines('./Code/cm22_autocorr.R')}
+```
+
+## Auto-Correlation
+\[
+\begin{aligned}
+y_{T+1} & = \beta_0 + \beta_1x_{T+1} + e_{T+1} & \text{without AR} \\
+y_{T+1} & = \beta_0 + \beta_1x_{T+1} + \rho e_{T} + e_{T+1} & \text{with AR(1)} \\
+\end{aligned}
+\]
+
+1. Given $x_{T+1}$, obtain $\hat{\beta}_{0_{GLS}} \;,\; \hat{\beta}_{1_{GLS}}$ (BLUE estimators)
+2. $\hat{\rho} = \left( \sum_{t=2}^T \hat{e_t}\hat{e_{t-1}} \right) / \sum_{t=2}^T \hat{e}_{t-1}^2$ (from OLS)
+3. $\tilde{e}_T = y_T - \hat{\beta}_{0_{GLS}}  - \hat{\beta}_{1_{GLS}}x_T $
+
+Then our model becomes: 
+\[
+\begin{aligned}
+\hat{y}_{T+1} & = \hat{\beta}_{0_{GLS}}  + \hat{\beta}_{1_{GLS}}x_T + \hat{\rho} \tilde{e}_{T} + \delta_{T+1} \\
+\hat{y}_{T+h} & = \hat{\beta}_{0_{GLS}}  + \hat{\beta}_{1_{GLS}}x_{T+h} + \hat{\rho}^h \tilde{e}_{T} + \delta_{T+h} \\
+\hat{y}_{T+h} & = \hat{\beta}_{0_{GLS}}  + \hat{\beta}_{1_{GLS}}x_{T+h} + \delta_{T+h} & \text{assuming } \lvert \hat{\rho} \rvert < 1 \implies \hat{\rho}^h \rightarrow 0  \\
+\end{aligned}
+\]
+
+```{r}
+
+```
