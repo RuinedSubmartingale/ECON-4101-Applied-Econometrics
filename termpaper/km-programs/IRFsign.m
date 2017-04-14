@@ -12,6 +12,13 @@ function [IRMposs]=IRFsign(BETAnc,SIGMA,h,jmax)
   A=  [BETAnc; eye(K*(p-1),K*(p-1)), zeros(K*(p-1),K)];
   J=[eye(K,K) zeros(K,K*(p-1))];
   
+  A_powers = zeros([K, K, h]);
+  tmp = eye(size(A));
+  for i=1:h
+      tmp = tmp * A;
+      A_powers(:,:,i) = tmp(1:K,1:K);
+  end
+    
   
   Btilda=zeros(K,K);  %this will be our set of permissable orthogonalizations
   %create rotation matrices
@@ -33,10 +40,11 @@ function [IRMposs]=IRFsign(BETAnc,SIGMA,h,jmax)
       [eigvec, eigval]=eig(SIGMA);
       P=eigvec*sqrt(eigval);
 
-      Theta=J*A^(0)*J'*P*Q;
-      IRM= reshape(Theta,K^2,1);
+      IRM = zeros(K^2, h+1);
+      PQ=P*Q;
+      IRM(:,1) = reshape(eye(K,K)*PQ,K^2,1);
       for i=1:h;
-          IRM=[IRM reshape(J*A^i*J'*P*Q,K^2,1)];
+          IRM(:,j+1) = reshape(A_powers(:,:,j)*PQ,K^2,1);
       end;
 
        if min(cumsum(IRM(1,1)))>=0 && IRM(2,1)>=0 && IRM(3,1)<=0 %1st column is supply shock

@@ -12,7 +12,7 @@ load kmData
 [BETAnc,B,X, SIGMA, U, V]=lsvarcSA(kmData,24);
 
 xmax=17;
-jmax=5000000;
+jmax=50;
 randn('state',316)
 [IRFaer, K]=VARirf(BETAnc,SIGMA,xmax);
 
