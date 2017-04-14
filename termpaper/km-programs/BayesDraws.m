@@ -13,7 +13,7 @@ ProdMBPM=worldprod(2:end)*30/1000;
 OECDCrudeDif=kmData(:,4);
 
 xmax=17;    %horizon
-jmax=10^3;  %number of draws for sign restrictions
+jmax=5*10^6;  %number of draws for sign restrictions
 rdraws=50;   %posterior draws
 
 randn('state',1112)

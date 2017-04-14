@@ -30,8 +30,14 @@ for r=1:n1
     end
     vecAr=Bvec+(chol(kron(pXX/(t-p),SIGMAr)))'*randn(q*12+q*q*p,1); 
 	Ar=[reshape(vecAr(12*q+1:12*q+q^2*p),q,q*p); eye(q*p-q,q*p-q) zeros(q*p-q,q)]; 
-   
-   
+    
+    Ar_powers = zeros([K, K, h]);
+    tmp = eye(size(Ar));
+    for i=1:h
+        tmp = tmp * Ar;
+        Ar_powers(:,:,i) = tmp(1:K,1:K);
+    end
+    
    %Compute sign IRFs
     for i=1:n2
       IRMint=zeros(K^2,h+1); %resetting
@@ -52,15 +58,10 @@ for r=1:n1
        
        %compute impulse response
        IRM = zeros(K^2, h+1);
-       IRM(:,1) = reshape(J*Ar^0*J'*P*Q,K^2,1);
+       IRM(:,1) = reshape(eye(K,K)*P*Q,K^2,1);
        PQ=P*Q;
-       tmp = zeros(size(Ar));
-       [VAr, DAr] = eig(Ar, 'vector');
-       ViAr = inv(VAr);
        for j=1:h
-         tmp2 = diag(power(DAr,j));
-         tmp = real(VAr*tmp2*ViAr);
-	     IRM(:,j+1) = reshape(tmp(1:K,1:K)*PQ,K^2,1);
+         IRM(:,j+1) = reshape(Ar_powers(:,:,j)*PQ,K^2,1);
        end;
  
        
