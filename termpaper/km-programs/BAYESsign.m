@@ -19,9 +19,14 @@ for r=1:n1
     
     RANTR=randn(t-p,q)/sqrt(t-p)*chol(inv(SIGMA));
     SIGMAr=inv(RANTR'*RANTR);
-    Bvec=[vec(V);vec(BETAnc(:,1:q))]; 
+    Bvec = zeros(size(vec(V), 1) + size(BETAnc, 1)*q*p, 1);
+    vlen = size(vec(V), 1);
+    Bvec(1:vlen) = vec(V);
+    qlen = size(BETAnc, 1)*q;
+    base = vlen;
+    Bvec((base+1):(base + qlen)) = vec(BETAnc(:,1:q));
     for l=1:p-1;
-        Bvec=[Bvec; vec(BETAnc(:,q*l+1:q*(l+1)))];
+        Bvec((base + l*qlen + 1):(base + (l+1)*qlen)) = vec(BETAnc(:,q*l+1:q*(l+1)));
     end
     vecAr=Bvec+(chol(kron(pXX/(t-p),SIGMAr)))'*randn(q*12+q*q*p,1); 
 	Ar=[reshape(vecAr(12*q+1:12*q+q^2*p),q,q*p); eye(q*p-q,q*p-q) zeros(q*p-q,q)]; 
@@ -46,9 +51,16 @@ for r=1:n1
        P=eigvec*sqrt(eigval);
        
        %compute impulse response
-       IRM=reshape(J*Ar^0*J'*P*Q,K^2,1);
+       IRM = zeros(K^2, h+1);
+       IRM(:,1) = reshape(J*Ar^0*J'*P*Q,K^2,1);
+       PQ=P*Q;
+       tmp = zeros(size(Ar));
+       [VAr, DAr] = eig(Ar, 'vector');
+       ViAr = inv(VAr);
        for j=1:h
-	     IRM=([IRM reshape(J*Ar^j*J'*P*Q,K^2,1)]);
+         tmp2 = diag(power(DAr,j));
+         tmp = real(VAr*tmp2*ViAr);
+	     IRM(:,j+1) = reshape(tmp(1:K,1:K)*PQ,K^2,1);
        end;
  
        
