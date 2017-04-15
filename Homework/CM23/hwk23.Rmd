@@ -1,0 +1,134 @@
+---
+title: |
+  | ECON 4101 Econometrics
+  | CM23 Homework
+author: "Pranav Singh"
+date: "April 12, 2017"
+output: pdf_document
+# output: html_document
+# output: github_document
+---
+
+```{r, include=F}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=80),tidy=T)
+options(scipen=999)
+
+library(ggplot2)
+library(gridExtra)
+require(data.table)
+theme_set(theme_bw())
+
+require(xlsx)
+require(lmtest)
+require(sandwich)
+require(nlme)
+```
+
+```{r}
+df <- read.csv('../../Data/monop.csv')
+str(df)
+lay <- rbind(c(1,2), c(3))
+g1 <- ggplot(df, aes(x = q, y = tr)) + geom_point() + geom_smooth(method='loess') + scale_x_continuous(breaks=pretty(df$q, n=10)) + scale_y_continuous(breaks=pretty(df$tr, n=10)) + ylab('Total Revenue') + xlab('Quantity')
+g2 <- ggplot(df, aes(x = q, y = tc)) + geom_point() + geom_smooth(method='loess') + scale_x_continuous(breaks=pretty(df$q, n=10)) + scale_y_continuous(breaks=pretty(df$tc, n=10)) + ylab('Total Cost') + xlab('Quantity')
+g3 <- ggplot(df, aes(x = q, y = tr-tc)) + geom_point() + geom_smooth(method='loess') + scale_x_continuous(breaks=pretty(df$q, n=20)) + scale_y_continuous(breaks=pretty(-5000:10000, n=20)) + ylab('Profit = TR - TC') + xlab('Quantity')
+grid.arrange(grobs=list(g1,g2,g3), layout_matrix = lay)
+```
+
+Monopolist's Economic Model:
+\[
+\begin{aligned}
+tr &= \beta_1q + \beta_2q^2 \\
+tc &= \alpha_1 + \alpha_2q + \alpha_3q^2
+\end{aligned}
+\]
+
+# Part A
+\[
+\begin{aligned}
+mr &= \frac{d}{dq}\{tr\}  = \beta_1 + 2\beta_2q \\
+mc &= \frac{d}{dq}\{tc\} = \alpha_2 + 2\alpha_3q
+\end{aligned}
+\]
+
+# Part B
+\[
+\begin{aligned}
+& mr & = \; & mc \\
+\implies & \beta_1 + 2\beta_2q^* & = \;& \alpha_2 + 2\alpha_3q^* \\
+\implies & (2\beta_2 - 2\alpha_3)q^* & = \;& \alpha_2 - \beta_1 \\
+\implies & q^* & = \;& \frac{\alpha_2 - \beta_1}{2(\beta_2 - \alpha_3)}
+\end{aligned}
+\]
+
+# Part C
+```{r}
+m.tr <- lm(tr ~ 0 + q + I(q^2), df); summary(m.tr)
+m.tc <- lm(tc ~ q + I(q^2), df); summary(m.tc)
+```
+These estimates are appropriate (unbiased) for models that satisfy the first four Gauss-Markov assumptions: (1) the model is linear in parameters, (2) the observations are randomly sampled, (3) the model has zero conditional mean, and (4) there is no perfect collinearity between the model's terms.
+
+```{r}
+profitMaximizingQuantity <- function(alpha, beta) {
+  (alpha[2] - beta[1]) / (2*(beta[2] - alpha[3]))
+}
+qstar <- profitMaximizingQuantity(m.tc$coefficients, m.tr$coefficients)
+```
+From part (b), we see that the OLS estimates suggest the profit maximizing level of output is $q^*$ = `r qstar`.
+
+# Part D
+```{r}
+qstar <- round(qstar)
+pred.tr <- predict(m.tr, data.frame(q=qstar))
+pred.tc <- predict(m.tc, data.frame(q=qstar))
+pred.profit <- pred.tr - pred.tc
+```
+The predicted profit is \$`r round(pred.profit, 2)`.
+
+# Part E
+```{r}
+for(i in 1:5) {
+  bg <- bgtest(m.tr, order=i)
+  s <- sprintf("Breusch-Godfrey Test: AR(%d) P=%0.4f \n", i, bg$p.value)
+  cat(s)
+}
+for(i in 1:5) {
+  bg <- bgtest(m.tc, order=i)
+  s <- sprintf("Breusch-Godfrey Test: AR(%d) P=%0.4f \n", i, bg$p.value)
+  cat(s)
+}
+```
+
+# Part F
+```{r}
+acf(resid(m.tr))
+m.tr.ols <- gls(tr ~ 0 + q + I(q^2), df)
+m.tr.gls <- gls(tr ~ 0 + q + I(q^2), df, correlation = corARMA(p=1,q=0))
+anova(m.tr.ols, m.tr.gls)
+summary(m.tr.gls)
+confint(m.tr.gls)
+```
+```{r}
+acf(resid(m.tc))
+m.tc.ols <- gls(tc ~ q + I(q^2), df)
+m.tc.gls <- gls(tc ~ q + I(q^2), df, correlation = corARMA(p=1,q=0))
+anova(m.tc.ols, m.tc.gls)
+summary(m.tc.gls)
+confint(m.tc.gls)
+```
+
+# Part G
+```{r}
+qstar <- profitMaximizingQuantity(m.tc.gls$coefficients, m.tr.gls$coefficients)
+```
+The profi-maximizing level of output suggested by the GLS model is $q^*$ = `r qstar`.
+
+# Part D
+```{r}
+qstar <- round(qstar)
+pred.tr.gls <- predict(m.tr.gls, data.frame(q=qstar))
+pred.tc.gls <- predict(m.tc.gls, data.frame(q=qstar))
+pred.profit.gls <- pred.tr.gls - pred.tc.gls
+```
+The predicted profit is \$`r round(pred.profit.gls, 2)`.
+
