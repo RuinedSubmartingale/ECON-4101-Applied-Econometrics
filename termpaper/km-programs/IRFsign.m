@@ -44,7 +44,7 @@ function [IRMposs]=IRFsign(BETAnc,SIGMA,h,jmax)
       PQ=P*Q;
       IRM(:,1) = reshape(eye(K,K)*PQ,K^2,1);
       for i=1:h;
-          IRM(:,j+1) = reshape(A_powers(:,:,j)*PQ,K^2,1);
+          IRM(:,i+1) = reshape(A_powers(:,:,i)*PQ,K^2,1);
       end;
 
        if min(cumsum(IRM(1,1)))>=0 && IRM(2,1)>=0 && IRM(3,1)<=0 %1st column is supply shock

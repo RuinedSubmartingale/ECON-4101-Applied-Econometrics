@@ -70,5 +70,7 @@ line([(2002+11/12) (2002+11/12)], [-100 100],'linewidth',2)
 line([(1985+12/12) (1985+12/12)], [-100 100],'linewidth',2)
 grid on
 
+saveas(gcf, 'Figure2.png')
+
 
 

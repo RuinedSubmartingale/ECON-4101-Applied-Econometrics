@@ -116,6 +116,7 @@ subplot(3,4,10);
     line([0 xmax], [0 0],'linewidth',2)
     axis([0 xmax -20 20]);
     hold off;    
-  
+    
+saveas(gcf, 'Figure1.png')
 
      
