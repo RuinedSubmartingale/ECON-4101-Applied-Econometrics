@@ -950,3 +950,100 @@ Then our model becomes:
 ```{r}
 
 ```
+
+# CM26 - 4/17/2017 - Univariate Time Series
+```{r}
+df <- fread('./Data/cm26.csv')
+str(df)
+setorderv(df, c('year', 'quarter'))
+n <- nrow(df)
+df[, t := .I] # indices 1 : nrow(df)
+g.orig <- ggplot(df, aes(t, sales)) + geom_point() + geom_line(); 
+g <- g.orig; g
+```
+
+### Components of Time Series
+Given $X_t$ = time series data at time t  
+The idea is that we can break this into several parts:  
+$X_t = S_t + T_t + C_t$, where $S_t$ is a seasonal component that has regular/periodic variation to it, and $T_t$ is a trend component for gradual change, and $C_t$ is a cyclical component (e.g. business cycle), and $I_t$ is an irregular component (think of as an error). It's common practice to combine $T_t$ and $C_t$ into a single trend-cycle component $TC_t$. 
+
+### Approaches to modeling
+1. Additive Component Model
+\[ X_t = TC_t + S_t + I_t \]
+2. Multiplicative Component Model
+\[ X_t = TC_t \cdot S_t \cdot I_t\]
+3. Unobserved Components Model
+\[ X_t = (TC_t + I_t) \cdot S_t \]
+
+We're going to look at (3) Unobserved Components Model today.
+
+#### Smoothing Data with Moving Average
+e.g. Simple centered 3-point moving average
+\[ x_t^* = \frac{x_{t-1} + x_{t} + x_{t+1}}{3} \]
+
+#### Smoothing Quarterly Data with Moving Average
+e.g. SMA(4): simple 4-point moving average
+\[ x_{2.5}^* = \frac{x_1 + x_2 + x_3 + x_4}{4} \]
+
+We want to center the above SMA(4). We do so by taking two-point simple moving average of the above points, i.e. a SMA(2) of the $x_t^*$.
+\[ x_3^{**} = \frac{x_{2.5}^* + x_{3.5}^*}{2} \]
+\[ \begin{aligned} 
+x_t^{**} & = \frac{x_{t-.5}^* + x_{t+.5}^*}{2} \\ 
+& = \frac{x_{t-2} + 2x_{t-1} + 2x_t + 2x_{t+1} + x_{t+2}}{5} \\ 
+\end{aligned}\]
+
+From the above, we create Seasonal Index: \[ SI_t = \frac{X_t}{X_t^{**}} \]
+
+The next step is to calculate the median of our seasonal indices for each quarter: $ \text{median}(SI_{Q1}) \;,\; \text{median}(SI_{Q2}) \;,\;\text{median}(SI_{Q3}) \;,\;\text{median}(SI_{Q4})$
+We should have the average of the medians of the four seasonal indices should equal to 1. If it's not equal to 1, then we scale them approriately to get the Adjusted Median Seasonal Indices. i.e. Suppose the average of the medians is equal to 1.25 instead of 1. Then we simply divide each median by 1.25 to scale them.
+
+Our seasonally adjused data is then $X_t^s$ is then: 
+\[ X_t^s = \frac{X_i}{AMSI_{Q_t}} \]
+where AMSI is the Adjusted Median Seasonal Index, and $Q_t$ is the respective quarter (1,2,3 or 4) for time period $t$
+
+```{r}
+f <- rep(1/4, 4)
+tc2.5 <- filter(df$sales, f, side=2); head(tc2.5)
+f2 <- rep(1/2, 2)
+df$tc3 <- filter(tc2.5, f2, side=1)
+g <- g + geom_line(aes(y=tc3), color = 'blue'); g
+```
+
+```{r}
+# Create the seasonal indices
+df[, si := sales / tc3]
+str(df)
+g <- ggplot(df, aes(t, si)) + geom_point() + geom_line(); g
+
+# Split quarterly data
+sq_medians <- sapply(split(df$si, df$quarter), median, na.rm = T)
+
+# constant adjustment factor for medians
+cfac <- 1 / mean(sq_medians); cfac
+
+# seasonally adjusted quarterly medians
+q_sa_medians <- sq_medians * cfac; adj_sq_medians
+
+# Q1 adjusted median is approx 1.75, meaning Q1 data is approx 75% higher
+
+# seasonally adusted x's 
+df[, sales_sa := sales / q_sa_medians]
+```
+
+```{r}
+# black = original, blue = moving average, red = seasonally adjusted
+g <- ggplot(df, aes(x=t)) + 
+  geom_line(aes(y=sales)) + 
+  geom_line(aes(y=tc3), color='blue') +
+  geom_line(aes(y=sales_sa), color = 'red')
+```
+
+Given seasonal adjusted sales for the quarters are all equal to 632, we make the following predictions for the real sales amounts for those quarters:
+```{r}
+632 * sq_medians
+```
+
+### Making future projections
+
+Naive aprpoach: $x_{t+1} = K x_t$
+Slightly better: $x_{t+1} = \beta_0 x_t + \beta_1 x_{t-1} + \dots$
