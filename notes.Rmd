@@ -10,12 +10,13 @@ ouptut:
     toc: yes
     toc_depth: 2
 ---
-```{r setup}
+```{r setup, include=F}
 library(knitr)
 # opts_knit$set(root.dir='~/Google Drive/Dalton State College/2017 Spring/ECON-4101-Applied-Econometrics/')
 opts_chunk$set(cache = T)
-require(ggplot2)
 require(data.table)
+require(ggplot2)
+require(car)
 ```
 
 # Discrete Random Variables

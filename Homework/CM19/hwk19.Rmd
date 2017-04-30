@@ -36,6 +36,8 @@ mod1 <- lm(qty ~ price + trend, df)
 summary(mod1)
 ```
 
+The error term represents the cumulative effects of all omitted variables on the dependent variable, which is wheat supply in our case. So yes, it accounts for weather and all other factors besides the included price and technological trend variables.
+
 ## Problem 2
 ```{r}
 plot(mod1, 1)
@@ -53,6 +55,7 @@ se.uncorrected <- confint(mod1); se.uncorrected
 se.robust <- coefci(mod1, vcov = vcovHC(mod1, 'HC0')); se.robust
 coeftest(mod1, vcov = vcovHC(mod1, 'HC0'))
 ```
+We see that the confidence intervals using robust standard errors are centered around the same means but are wider than the one using uncorrected standard errors.
 
 # Part 2: CM20
 ## Problem 1
@@ -86,8 +89,4 @@ summary(mod.fgls)
 confint(mod.fgls)
 ```
 
-## Problem 2
-```{r}
-
-```
-
+The confidence intervals for WLS and GLS are not only tighter in bounds than those from Part 1, but they are also centered about different means. That is, whereas we only played around with the magnitude of the parameter estimates in Part 1 but not the paramter estimates themselves, the WLS and GLS models yield entirely different parameter estimates and standard errors.

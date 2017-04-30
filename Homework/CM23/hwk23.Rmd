@@ -123,12 +123,39 @@ qstar <- profitMaximizingQuantity(m.tc.gls$coefficients, m.tr.gls$coefficients)
 ```
 The profi-maximizing level of output suggested by the GLS model is $q^*$ = `r qstar`.
 
-# Part D
+# Part H
 ```{r}
 qstar <- round(qstar)
-pred.tr.gls <- predict(m.tr.gls, data.frame(q=qstar))
-pred.tc.gls <- predict(m.tc.gls, data.frame(q=qstar))
-pred.profit.gls <- pred.tr.gls - pred.tc.gls
+
+tr.last <- df[48,]$tr
+tc.last <- df[48,]$tc
+
+beta1 <- coef(m.tr.gls)[1]
+beta2 <- coef(m.tr.gls)[2]
+phi.tr <- 0.9340029
+
+alpha1 <- coef(m.tc.gls)[1]
+alpha2 <- coef(m.tc.gls)[2]
+alpha3 <- coef(m.tc.gls)[3]
+phi.tc <- 0.4826399
+
+pred.tr.gls.1 <- beta1*qstar + beta2*qstar^2 + phi.tr*tr.last
+pred.tc.gls.1 <- alpha1 + alpha2*qstar + alpha3*qstar^2 + phi.tc*tc.last
+pred.profit.gls.1 <- pred.tr.gls.1 - pred.tc.gls.1
+
+tr.last <- pred.tr.gls.1
+tc.last <- pred.tc.gls.1
+
+pred.tr.gls.2 <- beta1*qstar + beta2*qstar^2 + phi.tr*tr.last
+pred.tc.gls.2 <- alpha1 + alpha2*qstar + alpha3*qstar^2 + phi.tc*tc.last
+pred.profit.gls.2 <- pred.tr.gls.2 - pred.tc.gls.2
+
+tr.last <- pred.tr.gls.2
+tc.last <- pred.tc.gls.2
+
+pred.tr.gls.3 <- beta1*qstar + beta2*qstar^2 + phi.tr*tr.last
+pred.tc.gls.3 <- alpha1 + alpha2*qstar + alpha3*qstar^2 + phi.tc*tc.last
+pred.profit.gls.3 <- pred.tr.gls.3 - pred.tc.gls.3
 ```
-The predicted profit is \$`r round(pred.profit.gls, 2)`.
+The predicted profits for the next three months are (in dollars): `r round(c(pred.profit.gls.1, pred.profit.gls.2, pred.profit.gls.3), 2)`.
 
