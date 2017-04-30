@@ -14,6 +14,8 @@ ouptut:
 library(knitr)
 # opts_knit$set(root.dir='~/Google Drive/Dalton State College/2017 Spring/ECON-4101-Applied-Econometrics/')
 opts_chunk$set(cache = T)
+require(ggplot2)
+require(data.table)
 ```
 
 # Discrete Random Variables
@@ -952,12 +954,18 @@ Then our model becomes:
 ```
 
 # CM26 - 4/17/2017 - Univariate Time Series
+## SEE CM26_UNIVARIATEFORECAST.R code!!!
 ```{r}
+require(data.table)
+require(ggplot2)
 df <- fread('./Data/cm26.csv')
+```
+
+```{r}
 str(df)
 setorderv(df, c('year', 'quarter'))
 n <- nrow(df)
-df[, t := .I] # indices 1 : nrow(df)
+invisible(df[, t := .I]) # indices 1 : nrow(df)
 g.orig <- ggplot(df, aes(t, sales)) + geom_point() + geom_line(); 
 g <- g.orig; g
 ```
@@ -1006,12 +1014,12 @@ f <- rep(1/4, 4)
 tc2.5 <- filter(df$sales, f, side=2); head(tc2.5)
 f2 <- rep(1/2, 2)
 df$tc3 <- filter(tc2.5, f2, side=1)
-g <- g + geom_line(aes(y=tc3), color = 'blue'); g
+g <- ggplot(df, aes(t, sales)) + geom_point() + geom_line() + geom_line(aes(y=tc3), color = 'blue'); g
 ```
 
 ```{r}
 # Create the seasonal indices
-df[, si := sales / tc3]
+invisible(df[, si := sales / tc3])
 str(df)
 g <- ggplot(df, aes(t, si)) + geom_point() + geom_line(); g
 
@@ -1022,12 +1030,12 @@ sq_medians <- sapply(split(df$si, df$quarter), median, na.rm = T)
 cfac <- 1 / mean(sq_medians); cfac
 
 # seasonally adjusted quarterly medians
-q_sa_medians <- sq_medians * cfac; adj_sq_medians
+q_sa_medians <- sq_medians * cfac; q_sa_medians
 
 # Q1 adjusted median is approx 1.75, meaning Q1 data is approx 75% higher
 
 # seasonally adusted x's 
-df[, sales_sa := sales / q_sa_medians]
+invisible(df[, sales_sa := sales / q_sa_medians])
 ```
 
 ```{r}
@@ -1035,7 +1043,7 @@ df[, sales_sa := sales / q_sa_medians]
 g <- ggplot(df, aes(x=t)) + 
   geom_line(aes(y=sales)) + 
   geom_line(aes(y=tc3), color='blue') +
-  geom_line(aes(y=sales_sa), color = 'red')
+  geom_line(aes(y=sales_sa), color = 'red'); g
 ```
 
 Given seasonal adjusted sales for the quarters are all equal to 632, we make the following predictions for the real sales amounts for those quarters:
@@ -1045,5 +1053,246 @@ Given seasonal adjusted sales for the quarters are all equal to 632, we make the
 
 ### Making future projections
 
-Naive aprpoach: $x_{t+1} = K x_t$
+Naive aprpoach: $x_{t+1} = C x_t$ = a constant multiple of your prior value  
 Slightly better: $x_{t+1} = \beta_0 x_t + \beta_1 x_{t-1} + \dots$
+
+# CM27 4/19/17 - Exponential Smoothing
+L_t = exponential level in time period t
+\[ 
+\begin{aligned}
+L_t & = \sum_{i=0}^{\infty}{\alpha (1-\alpha)^i x_{t-i}} \\
+\implies L_t - (1-\alpha)L_{t-1} & = \alpha x_t \\
+\implies L_t & = \alpha x_t + (1-\alpha) L_{t-1}
+\end{aligned}
+\]
+
+We set $L_1 = x_1$. If $x_t$ is erratic, we set $\alpha \in (0,1)$ to a relatively low value. If $x_t$ is relativly stable, we set $\alpha$ to a relatively high value.
+
+The error at time $t$ is $e_t = x_t - \hat{x}_t$. 
+
+### Holt's Linear Trend Algorithm
+Attempts to account for trend in the data.
+\[
+\begin{align}
+\text{(Trend)} \quad T_t & = \beta (L_t - L_{t-1}) + (1 - \beta) T_{t-1} \\
+\implies L_t & = \alpha x_t + (1-\alpha)(L_{t-1} + T_{t-1}) \\
+& 0 < \alpha, \beta < 1
+\end{align}
+\]
+
+e.g. of Holt's Linear Trend Algorithm:  
+start with L_2 = x_2 and T_2 = x_2 - x_1  
+and alpha = 0.3 and beta = 0.1  
+
+t   | x_t   |  L_t    | T_t
+--- | ---   | ---     | ---
+1   | 513   |  --     | --   
+2   | 530   |  530    | 17  
+3   | 543   |  545.8  | 16.88  
+4   | 770   |  624.9  | 23.1  
+... and so on 
+
+```{r}
+str(df)
+n <- nrow(df)
+
+alpha <- 0.3
+L <- array(as.numeric(), n)
+
+for (i in 1:n) {
+  if (i == 1) {
+    L[i] <- df$sales_sa[1] 
+  } else {
+    L[i] <- alpha*df$sales_sa[i] + (1-alpha)*L[i-1]
+  }
+}
+
+df$L <- L
+beta <- 0.1
+str(df)
+ggplot(df, aes(t, sales_sa)) + geom_line() + geom_line(aes(y = L), color = 'red')
+```
+
+```{r}
+# Convert X data into a time series
+df$sales_sa_ts <- ts(df$sales_sa, start=c(df$year[1], 1), frequency = 4) # 4 for quarterly
+```
+
+### Holt-Winters Function
+Can account for not only exponential smoothing, but also for trends (seasonality).
+
+```{r}
+# gamma represents seasonal component. FALSE -> non-seasonal model is fitted
+mod.hw <- HoltWinters(df$sales_sa_ts, alpha=0.3, beta=0.1, gamma=F)
+plot(mod.hw) # looks very similar to the exponential smoothing plot above
+mod.hw$SSE
+```
+
+```{r}
+# allow function to AUTO choose best beta value for us
+mod.hw2 <- HoltWinters(df$sales_sa_ts, alpha=0.3, gamma=F) 
+mod.hw2$beta # as compared to our hardcoded 0.1 above
+plot(mod.hw2) # looks similar, but less variance
+mod.hw2$SSE # smaller than mod.hw$SSE since we let it auto choose beta
+```
+
+```{r}
+# allow function to AUTO choose best alpha and beta values for us
+mod.hw3 <- HoltWinters(df$sales_sa_ts, gamma=F)
+mod.hw3$alpha; mod.hw3$beta
+plot(mod.hw3)
+mod.hw3$SSE
+```
+
+```{r}
+library(forecast)
+fcast <- forecast(mod.hw3, 4)
+plot(fcast)
+```
+
+```{r}
+# allow HoltWinters to account for seasonality
+mod.hw4 <- HoltWinters(df$sales_sa_ts)
+plot(mod.hw4)
+fcast <- forecast(mod.hw4, 4)
+fcast
+plot(fcast)
+```
+
+# 4/24/2017
+```{r}
+df26 <- fread('Data/cm26.csv')
+x <- ts(df26$sales, start=c(min(df26$year),1), frequency=4); x
+dcx <- decompose(x, type='mult')
+si <- dcx$figure; si
+plot(dcx)
+```
+
+```{r}
+require(forecast)
+xsa <- seasadj(dcx, col=4)
+ts.plot(x, xsa)
+```
+
+```{r}
+# Simple Exponential Smoothing
+mod.ses <- ses(xsa, h=4)
+fcast.ses <- forecast(mod.ses, 4)
+plot(fcast.ses)
+
+# can also find forecast predictions as follows:
+xsa.2008 <- predict(mod.ses, n.ahead=4); xsa.2008
+```
+
+```{r}
+x.2008.ses <- si * xsa.2008$mean; x.2008.ses
+alpha.ses <- mod.ses$model$par['alpha'] # alpha = exponential smoothing constant 
+alpha.ses
+```
+
+```{r}
+# Holt's Method
+mod.h <- HoltWinters(xsa, gamma=F) # gamma = seasonality component constant
+xsa.2008 <- predict(mod.h, n.ahead = 4); xsa.2008
+x.2008.h <- si * xsa.2008; x.2008.h
+alpha.h <- mod.h$alpha; alpha.h
+beta.h <- mod.h$beta; beta.h # beta = trend component constant
+```
+
+```{r}
+# Holt Winter's Method
+# since we let Holt Winter's account for seasonality, we use the original 
+# full data x, instead of our manually seasonally adjusted xsa data
+mod.hw <- HoltWinters(x, seasonal='multiplicative')
+mod.hw
+fcast.hw <- forecast(mod.hw, 4); fcast.hw
+plot(fcast.hw)
+```
+
+```{r}
+# ARIMA - AutoRegressive Integrated Moving Average
+mod.arima <- auto.arima(x, stepwise = F); mod.arima
+fcast.arima <- forecast(mod.arima, 4); fcast.arima
+plot(fcast.arima)
+
+# The title for the above plot corresponds to: 
+# ARIMA(AR, #Diffs, MA)(AR seasonal, #Diffs seasonal)(MA seasonal)[periods]
+```
+
+```{r}
+# SSARIMA - State Space ARIMA
+require(smooth)
+mod.ssarima <- auto.ssarima(x, h = 4, initial = 'optimal', stepwise = FALSE)
+mod.ssarima
+plot(mod.ssarima)
+fcast.ssarima <- forecast(mod.ssarima, 4); fcast.ssarima
+plot(fcast.ssarima)
+```
+
+```{r}
+# Measures of Goodness-of-Fit
+mod.holt <- holt(x)
+accuracies <- lapply(list('fcast.ses' = fcast.ses, 'fcast.holt' = mod.holt, 'fcast.hw' = fcast.hw, 'fcast.arima' = fcast.arima, 'fcast.ssarima' = fcast.ssarima), accuracy)
+accuracies
+```
+
+# 4/26/2017
+\[ \text{success odds} = \frac{P(\text{success})}{1 - P(\text{success})} \]
+\[ \text{Likelihood Ratio of 1 over 2} = \frac{\text{success odds 1}}{\text{success odds 2}} \]
+## Logistic Transformation
+\[ logit(y) \equiv \ln(\frac{y}{1-y}) = \ln(\text{odds ratio of y}) \]
+\[ 
+\begin{aligned}
+\theta & \equiv \exp(\beta_0 + \beta_1x) \\
+y & = \frac{\theta}{1 + \theta} \\
+logit(y) & = \frac{\frac{\theta}{1 + \theta}}{1 - \frac{\theta}{1 + \theta}} \\
+& = \theta \\
+& = \exp(\beta_0 + \beta_1x)
+\end{aligned}
+\]
+```{r}
+dfm <- fread('Data/honorsSAT.csv')
+str(dfm)
+attach(dfm)
+```
+
+### Linear Probability Model
+```{r}
+summary(lm(hon ~ female))
+# interpretation: being a female increases prob of being honors by 10.676%
+```
+
+#### Generalized Linear Models - Binomial Logistic Regression
+```{r}
+mod1 <- glm(hon ~ 1, family = binomial(link = logit))
+summary(mod1)
+
+odds.ratio <- exp(coef(mod1)[1]); odds.ratio
+p.honors <- odds.ratio / (1 + odds.ratio); odds.ratio
+```
+
+```{r}
+# LOGIT with female variable, female=1, male=0
+mod2 <- glm(hon ~ female, family = binomial(link = logit))
+summary(mod2)
+
+odds.ratios <- exp(coef(mod2)); odds.ratios
+# interpretation: being female increases likelihood of honors by 81%
+
+exp(confint(mod2))
+```
+
+```{r}
+# LOGIT with females and math scores
+mod3 <- glm(hon ~ female + math, family = binomial(link = logit))
+summary(mod3)
+
+exp(coef(mod3))
+# interpretation: 1 point increase in math score increases likelihood by 17.85%
+# and after accounting for math scores, females are 2.63 as likely to get honors
+
+exp(confint(mod3))
+```
+
+
+
