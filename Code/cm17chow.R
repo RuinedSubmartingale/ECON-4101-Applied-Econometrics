@@ -20,12 +20,12 @@
 # data should be split into separate groups, and estimated
 # separately.
 #
-# F < Fcrit: Fail to Reject Ho: there is insufficient 
-# statistical evidence at the stated level of significance 
+# F < Fcrit: Fail to Reject Ho: there is insufficient
+# statistical evidence at the stated level of significance
 # to reject the null hypothesis that the models are the same.
 # The data can be safely pooled and estimated as one group.
-# 
-# 
+#
+#
 
 #Management has given us data from two different
 #operations. One is for short-range flights defined
@@ -33,7 +33,7 @@
 #as 5 or more hours.  They have provided the data grouped
 #together (chow.csv)
 
-dfm <- read.csv("chow.csv")
+dfm <- read.csv("./Data/chow.csv")
 fnm <- dfm$fnm       #fuel per nautical mile (lbs)
 hours <- dfm$hours   #flight time (hours)
 

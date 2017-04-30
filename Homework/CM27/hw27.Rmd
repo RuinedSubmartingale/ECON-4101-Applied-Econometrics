@@ -1,9 +1,9 @@
 ---
 title: |
   | ECON 4101 Econometrics
-  | CM23 Homework
+  | CM27 Homework
 author: "Pranav Singh"
-date: "April 12, 2017"
+date: "April 28, 2017"
 output: pdf_document
 # output: html_document
 # output: github_document
@@ -11,7 +11,7 @@ output: pdf_document
 
 ```{r, include=F}
 library(knitr)
-opts_chunk$set(tidy.opts=list(width.cutoff=80),tidy=T)
+# opts_chunk$set(tidy.opts=list(width.cutoff=80),tidy=T)
 options(scipen=999)
 
 library(ggplot2)
@@ -23,9 +23,43 @@ require(xlsx)
 require(lmtest)
 require(sandwich)
 require(nlme)
+require(forecast)
+require(smooth)
 ```
 
 ```{r}
-fread('../../Data/cm27.csv')
+df <- fread('../../Data/cm27.csv')
+str(df)
+```
+
+```{r}
+x <- ts(df$x, start=c(1965, 1), frequency = 12); str(x)
+dcx <- decompose(x, type='mult')
+si <- dcx$figure; si
+plot(dcx)
+```
+
+```{r}
+xsa <- seasadj(dcx)
+ts.plot(x, xsa)
+```
+
+```{r}
+# Holt-Winter's Method
+mod.hw <- HoltWinters(x, seasonal='multiplicative'); mod.hw
+fcast.hw <- forecast(mod.hw, 12); fcast.hw
+plot(fcast.hw)
+```
+
+```{r, tidy=F}
+# SSARIMA method
+mod.ssarima <- auto.ssarima(x, h = 12, initial = 'optimal', stepwise = F, silent = 'all'); mod.ssarima
+plot(mod.ssarima)
+fcast.ssarima <- forecast(mod.ssarima, 12); fcast.ssarima
+plot(fcast.ssarima)
+```
+
+```{r}
+accuracies <- lapply(list('HoltWinters' = fcast.hw, 'SSARIMA' = fcast.ssarima), accuracy); accuracies
 ```
 

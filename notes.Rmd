@@ -30,7 +30,7 @@ P_2 = P(X = 1) = 1/2
 
 ```{r}
 # evansresearch.us/DSC/Spring2017/ECMT/
-home.prices <- read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/hprice.csv', header = T)
+home.prices <- read.csv('./Data/hprice.csv', header = T)
 ```
 
 # Linear regression
@@ -72,8 +72,7 @@ lm_eqn = function(m) {
 ```
 
 ```{r}
-library(ggplot2)
-dispIncome.consump <- read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/cm04YC.csv', header=T)
+dispIncome.consump <- read.csv('./Data/cm04YC.csv', header=T)
 y <- dispIncome.consump$consump; names(y) <- 'Consumption'
 x <- dispIncome.consump$dispinc; names(x) <- 'Disposable Income'
 boxplot(cbind(x,y), horizontal=T, col='gray')
@@ -168,7 +167,7 @@ pf(fstat, k, n-2, lower=F)
 
 # CM07
 ```{r}
-data <- read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/tabb777.csv', header=T)
+data <- read.csv('./Data/tabb777.csv', header=T)
 ```
 ```{r}
 str(data)
@@ -189,7 +188,7 @@ cbind(newdata, predict(lm.mod, newdata, interval='prediction'))
 
 ```{r}
 # download.file(url = 'http://evansresearch.us/DSC/Spring2017/ECMT/Code/ecmtUtil.R', destfile = './code/ecmUtil.R')
-source('./code/ecmUtil.R')
+source('./Code/ecmtUtil.R')
 addCIPI2Plot(data$hours, data$fuel)
 ```
 
@@ -230,7 +229,7 @@ abline(coef(mod2))
 ### Consumption ~ Disposable.Income
 \[ Real = \frac{Nominal}{CPI} * 100 \]
 ```{r}
-dfm <- read.csv("http://evansresearch.us/DSC/Spring2017/ECMT/Data/cm08YC.csv")
+dfm <- read.csv("./Data/cm08YC.csv")
 str(dfm)
 y <- 100 * dfm$consump / dfm$cpi
 x <- 100 * dfm$dispinc / dfm$cpi
@@ -304,7 +303,7 @@ Total       | SST | n - 1 |
 4. Return to Step 1.
 
 ```{r}
-df <- read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/sp500.csv')
+df <- read.csv('./Data/sp500.csv')
 # SP500: S&P500 index
 # TB3MS: 3-month treasury bill (%)              (Hypoth: - parameter)
 # NAPMNOI: new manufacturing orders (index)     (Hypoth: + parameter)
@@ -401,7 +400,7 @@ Critical region: Reject $H_0$ when $F > F_{crit}$
 where $SSE_R$ is for restricted model and $SSE_U$ is for unrestricted model, and $q$ = number of restrictions, and $k$ is the number of terms in the unrestricted model.
 
 ```{r}
-dfm <- read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/burger78.csv')
+dfm <- read.csv('./Data/burger78.csv')
 # tr = total receipts (in thousaands of $)
 # p = price (in $)
 # a = advertising costs (in thousands of $)
@@ -486,7 +485,7 @@ if (t < sse.ll) {
 ```{r}
 # runs = b0 + b1*age[-] + b2*games[+] + b3*hits[+] + b4*walks[+] + b5*avg[+]
 # where feature[+/-] indicates the sign we expect its coefficient to be
-dfm <- read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/astrohitters.csv')
+dfm <- read.csv('./Data/astrohitters.csv')
 summary(dfm)
 ```
 ```{r}
@@ -499,7 +498,7 @@ anova(lm.restricted, lm.unrestricted) # ommitted terms appear isignificant
 
 # 3/1/2017
 ```{r}
-dfm <- read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/burger78.csv') # variables explained earlier above
+dfm <- read.csv('./Data/burger78.csv') # variables explained earlier above
 ```
 Our naive model was $tr = \beta_0 + \beta_1p + \beta_2a$, but we expect the positive effect of advertising to taper off eventually. So we adjust our model to be$tr = \beta_0 + \beta_1p + \beta_2a + \beta_3a^2$, where we expect $\beta_3 < 0$.Then $\frac{dtr}{da} = \beta_2 + 2\beta_3a$. Setting this equal to 1, we get $a = \frac{1-\beta_2}{2\beta_3}$ as our estimate of when a \$1000 increase of advertising yields a \$1000 increase of total receipts. Substituting back into our model, we get $tr = \beta_0 + \beta_1p + (1-2\beta_3a)a + \beta_3a^2$, and so $tr - a = \beta_0 + \beta_1p - \beta_3a^2$. In doing so, we have imposed a restriction on our model. If your restriction doesn't truly reflect reality,
 then your estimates will be biased. If they do, then it's good.
@@ -545,7 +544,7 @@ anova(mod2, mod1)
 
 # 3/6/2017
 ```{r}
-dfm <- read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/goodyear.csv')
+dfm <- read.csv('./Data/goodyear.csv')
 # price: $1000's
 # size: sqft
 # bedrooms: levels
@@ -617,7 +616,7 @@ H1: not H0, (we need to estimate models separately)
 F statistic = [ (SSE_r - SSE_u) / q ] / [ SSE_u / n - k - 1] ~ F_alpha, q, n - k - 1 ... where q is the number of restrictions, and k is the number of independent variables in the unrestricted model.
 Reject H0: if F > F_crit
 ```{r}
-source('cm17chow.R')
+source('./Code/cm17chow.R')
 ```
 ```{r}
 # CM17 hwk
@@ -633,8 +632,7 @@ source('cm17chow.R')
 #     (b0 + c0) + (b1 + c1)x1 + (b2 + c2)x2     if D = 1 (unrestricted)
 #     b0 + b1*x1 + b2*x2                        if D = 0 (restricted)
 # }
-require(data.table)
-dt <- as.data.table(read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/gewe.csv'))
+dt <- as.data.table(read.csv('./Data/gewe.csv'))
 dt <- melt.data.table(dt, id.vars = 'X', measure=patterns('i_', 'v_', 'k_'), variable.name = 'dummy', value.name = c('investment', 'value', 'capital'))
 str(dt)
 ```
@@ -662,7 +660,7 @@ str(dt)
 # y = 40.8 + 0.13x + u
 # E[u] = 0
 # u ~ N(0, 37.8)
-source('cm18.1_hsked.R')
+source('./Code/cm18.1_hsked.R')
 ```
 
 Homoskedasticity - expect $\hat{\sigma_t} = \sigma$  
@@ -744,7 +742,7 @@ If errors are homoskedastic, $y = \beta_0x_0 + \beta_1x_1 + e$
 By making the above correction, we ensure errors are homoskedastic. This yields valid standard errors, and consequently valid confidence intervals and valid inferences (i.e. hypothesis tests).
 
 ```{r}
-dfm.wfe <- read.csv('wfe.csv')
+dfm.wfe <- read.csv('./Data/wfe.csv')
 ```
 ```{r}
 mod1 <- lm(food ~ income, dfm.wfe)
@@ -772,7 +770,7 @@ rse.w <- summary(mod.w)$sigma
 #     respective standard deviation
 # 5. OLS on the transformed variables
 
-attach(read.csv('wfe.csv'))
+attach(read.csv('./Data/wfe.csv'))
 # first partition...
 y <- food[1:20]
 x <- income[1:20]
@@ -849,7 +847,7 @@ COR[\epsilon_t, \epsilon_{t-1}] = \rho \\
 ```{r}
 # price (in takas)
 # area (in acres)
-df <- read.csv('http://evansresearch.us/DSC/Spring2017/ECMT/Data/sugarcane.csv')
+df <- read.csv('./Data/sugarcane.csv')
 y <- df$area
 x <- df$price
 ```
@@ -957,8 +955,6 @@ Then our model becomes:
 # CM26 - 4/17/2017 - Univariate Time Series
 ## SEE CM26_UNIVARIATEFORECAST.R code!!!
 ```{r}
-require(data.table)
-require(ggplot2)
 df <- fread('./Data/cm26.csv')
 ```
 
@@ -1098,7 +1094,7 @@ str(df)
 n <- nrow(df)
 
 alpha <- 0.3
-L <- array(as.numeric(), n)
+L <- numeric(n)
 
 for (i in 1:n) {
   if (i == 1) {

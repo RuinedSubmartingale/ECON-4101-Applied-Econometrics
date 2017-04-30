@@ -2,13 +2,13 @@
 #
 
 #First let's create a model with homoskedastic errors
-# just so we can see what is "normal". Later we will 
+# just so we can see what is "normal". Later we will
 # look at a similar model with heteroskedastic errors
 set.seed(6829)
 x <- seq(258,1155,length=40)
 y <- 40.8 + 0.13 * x + rnorm(40, 0, 37.8)
 
-#Graphical inspection of the model: note that as the 
+#Graphical inspection of the model: note that as the
 # value of x increases, the errors appear to vary by
 # the same amount (ie., homoskedastic).
 plot(x,y)
@@ -16,7 +16,7 @@ mod1 <- lm(y ~ x)
 abline(mod1)
 
 #Visually it appears the errors are homoskedastic.
-# with mean = 0, and standard deviation close to 
+# with mean = 0, and standard deviation close to
 # that specified for the y variable.
 e <- mod1$residuals
 plot(x, e, pch=2, main="Residual Plot",ylab="")
@@ -57,10 +57,10 @@ rm(list=ls())
 
 
 #==========================================================
-#Now let's look at some real data: weekly food expenditures 
+#Now let's look at some real data: weekly food expenditures
 # and income data. These data are from Hill, Griffiths and
 # Judge, Undergraduate Economics (2e), Table 3.1, page 50.
-dfm.wfe <- read.csv("wfe.csv")
+dfm.wfe <- read.csv("./Data/wfe.csv")
 names(dfm.wfe)
 
 income <- dfm.wfe$income
@@ -104,15 +104,15 @@ abline(h=mlower, col="#ffaaaa", lty=2)
 
 #Fit the upper and lower errors, separately, to the
 # observations.  This time it's pretty obvious the
-#errors are increasing as income increases, that is, 
+#errors are increasing as income increases, that is,
 #the errors are heteroskedastic
 mod.ue <- lm(dfm.ue$e ~ dfm.ue$income)
 abline(mod.ue,lty=4, col="blue")
 mod.le <- lm(dfm.le$e ~ dfm.le$income)
 abline(mod.le,lty=4, col="red")
 
-#So the question now is...can we formally test for 
-#heteroskedasticity (YES; Goldfeld-Quandt Test), and 
+#So the question now is...can we formally test for
+#heteroskedasticity (YES; Goldfeld-Quandt Test), and
 #can we update/correct the standard errors so that they
 #are reflect the presence of heteroskdedastiocity (YES; via
 #White's approximation)...
