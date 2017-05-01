@@ -49,12 +49,15 @@ for i=1:l;
     end;
   
 end;
+save IRFelas IRFelas
 
 load medelasuse
 %median of posterior is -.26
 distance=abs(elasuse-medelasuse);
 %find index of IRF with elasuse closest to -.26
 [mindist, findex]=min(distance)  
+
+save findex findex
 
 %Figure 1
 Figure1
