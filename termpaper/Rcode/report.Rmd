@@ -1,0 +1,29 @@
+---
+title: |
+  | ECON 4101 Econometrics
+  | Reproducibility Term Paper
+author: "Pranav Singh"
+date: "April 28, 2017"
+output: pdf_document
+# output: html_document
+# output: github_document
+---
+
+```{r, include=F}
+library(knitr)
+# opts_chunk$set(tidy.opts=list(width.cutoff=80),tidy=T)
+options(scipen=999)
+
+library(ggplot2)
+library(gridExtra)
+require(data.table)
+require(R.matlab)
+require(DescTools)
+theme_set(theme_bw())
+```
+
+```{r, child='Figure1.Rmd'}
+```
+
+```{r, child='Figure2.Rmd'}
+```

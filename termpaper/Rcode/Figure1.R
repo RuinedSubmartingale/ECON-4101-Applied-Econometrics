@@ -1,3 +1,4 @@
+
 require(R.matlab)
 bayesPosterior <- readMat('./termpaper/BayesPosterior.mat'); IRMposs <- bayesPosterior$IRMposs
 IRFelas <- readMat('./termpaper/IRFelas.mat'); IRFelas <- IRFelas$IRFelas;
