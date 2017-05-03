@@ -1,0 +1,108 @@
+---
+title: |
+  | ECON 4101 Econometrics
+  | Final Exam
+author: "Pranav Singh"
+date: "May 1, 2017"
+output: pdf_document
+# output: html_document
+# output: github_document
+---
+
+```{r, include=F}
+library(knitr)
+# opts_chunk$set(tidy.opts=list(width.cutoff=80),tidy=T)
+options(scipen=999)
+
+library(ggplot2)
+library(gridExtra)
+require(data.table)
+theme_set(theme_bw())
+
+require(xlsx)
+require(lmtest)
+require(sandwich)
+require(nlme)
+require(forecast)
+require(smooth)
+```
+
+# Problem 1
+## 1.1
+Based off the fitted model, vacation miles traveled was positively correlated with income and age and negatively correlated wtih number of kids. Specifically, an increase of one unit in the annual household income was associated with an increase of 17.427 miles driven per year, an increase of one unit in the average age of adult members in the household was associated with an increae of 16.365 miles driven per year, and each additional kid in the household was associated with a decrease of 84.956 miles driven per year.
+
+## 1.2
+The residuals seem to be homeskedastic relative to the age variable but heteroskedastic relative to the income variable. The next step should be to formally test for heteroskedasticity via the Goldfeld-Quandt Test. For this test, the null hypothesis assumes homoskedastic errors and the alternative hypothesis assumes heteroskedastic errors. The test statistic corresponds to an F-test of equality of the variances of the two partitions modeled separately. The degrees of freedom for the numerator and denominator are one less than the number of samples in each partition, respectively. If the test statistic is less than the critical F-value with alpha=0.05 and the aforementioned degrees of freedom, then we reject the null hypothesis. Otherwise, we don't have sufficient evidence to warrant the claim of heteroskedastic errors.
+
+# Problem 2
+## 2.1
+Autocorrelation, or serial correlation, refers to the correlation between the errors in different time periods in a time series or panel data model. Stock price modeling is an example of an econometric model where autocorrelation is likely to exist.
+
+## 2.2
+An AR(1) model refers to an autoregressive process of order one. It is a time series model whose current value depends linearly on its most recent value plus an unpredictable disturbance (i.e. an error term representing the cumulative effect of a collection of uncorrelated random variables that has mean zero and constant variaance). That is, $x_t = \rho x_{t-1} + e_t$.
+
+## 2.3
+Two main consequences of autocorrelation are:
+
+1. The least squares estimator is still linear unbiased, but no longer BLUE.
+2. Standard errors are incorrect, therefore confidence intervals, and inference may be misleading.
+
+# Problem 3
+
+The Durbin-Watson Test for Autocorrelation of an autoregressive process of order one takes as its null hypothesis the claim that the errors are uncorrelated and its alternative hypothesis the claim that the errors are autocorrelated. The test statistic for this test is:
+\[ d = \frac{\sum_{{t=2}}^{T}(e_{t}-e_{{t-1}})^{2}}{{\sum _{{t=1}}^{T}e_{t}^{2}}} \]
+The decision rules are as follows:
+\[ 
+\begin{aligned}
+d == 2 \;:\;& \text{No autocorrelation.} \\
+d < 2 \;:\;& \text{Positive autocorrelation} \\
+d > 2 \;:\;& \text{Negative autocorrelation}
+\end{aligned}
+\]
+```{r}
+df <- fread('../../Data/part3.csv')
+
+#Extract residuals and predicted values
+e <- df$Residuals
+n <- length(e)
+
+k = 1 #number of lags
+
+#Durbin-Watson statistic
+dw1 <- sum(diff(e,k)^2)/sum(e^2) ; dw1
+```
+The resulting test statistic value of `r dw1` is less than 2, so we interpret this as the model having positive autocorrelation.
+
+# Problem 4
+The notation ARIMA$(p,d,q)(P,D,Q)[m]$ refers to a Seasonally-Adjusted Autoregressive Integrated Moving Average (ARIMA) model where the parameters $(p,d,q)$ refer to the non-seasonal part of the ARIMA model and the parameters $(P,D,Q)$ refer to the seasonal part of the ARIMA model. More specifically, for the non-seasonal part of the ARIMA model, $p$ is the order (number of lags) of the autoregressive model, $d$ is the degree of differencing (number of times the data have had past values subtracted), and $q$ is the order of the moving average model. The uppercase versions of those parameters are similarly defined for the seasonal portion of the ARIMA model. Lastly, the parameter $m$ refers to the number of periods in each season. Thus, ARIMA$(1,0,2)(1,0,0)[12]$ refers to an ARIMA model for which:
+
+ 1. The non-seasonal portion has autoregressive order of 1, no differencing terms, and a moving average of order 2.
+ 2. The seasonal portion has autoregressive order 1, no differencing terms, no moving average terms, and is formed using 12 seasonal periods.
+
+# Problem 5
+
+```{r}
+df <- fread('../../Data/part5.csv')
+```
+
+## 5.1
+```{r}
+summary(lm(auto ~ dtime, df))
+```
+We see from the above fitted linear probability model that an increase of one minute in `dtime` is associated with an approximate 0.7031% increase in probability of a person choosing an automobile. Thus, the probability of a person choosing is an automobile given dtime=2 is 1.4062% greater than the case where dtime=0.
+
+## 5.2
+```{r}
+mod2 <- glm(auto ~ dtime, df, family = binomial(link=logit))
+summary(mod2)
+odds.ratios <- exp(coef(mod2)); odds.ratios
+```
+We see from the above fitted logit model that an increase of one minute in `dtime` is associated with an approximate 5.45% increase in probability of a person choosing an automobile. Thus, the probability of a person choosing is an automobile given dtime=2 is 10.9% greater than the case where dtime=0.
+
+## 5.3
+```{r}
+df$prediction <- ifelse(predict(mod2, newdata=df, type='response') > 0.5, 1, 0)
+accuracy <- mean(df$auto == df$prediction); accuracy
+```
+Our logit model yielded 90.48% accuracy in predicting whether a person chooses an automobile given the difference in commute times between bus and auto.
+
