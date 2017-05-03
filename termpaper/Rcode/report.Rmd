@@ -42,7 +42,25 @@ The authors assert that the variables are mutually endogenous. They include two 
   
 \pagebreak
 
-# Methodology
+# Methods & Procedures
+
+## VAR Methodology
+The analysis is based on a dynaic simultaneous equation model in the form of a structural vector autoregression (VAR). Let $y_t$ be a vector of endogenous variables including the percent change in global crude oil production, a measure of global real activity, the real price of crude oil, and the change in global oil inventories above the ground. All data are aggregated monthly. The sample time period is 1973:2 to 2009:8. Seasonal variation is removed by including seasonal dummies in the VAR model. 
+
+## Data
+The dry cargo shipping rate index (as developed by Kilian, 2009a) are used as the measure for fluctuations in global real activity. This index is designed to capture shifts in the global use of industrial commodities. Data on global crude oil production are gathered from the *Monthly Energy Review* of the Energy Information Administration (EIA). Oil production is expressed in period-over-period percent changes in the model. The real price of oil is defined as the US refiners' acquisition cost for imported crude oil, as reported by the EIA, extrapolated from 1974:1 back to 1973:1 as in Barsky and Kilian (2002) and deflated by the US CPI. The data for total US crude oil inventories is also provided by the EIA. These data are scaled by the ratio of OECD petroleum stocks over US petroleum stocks, also obtained from the EIA. That scale factor ranges from about 2.23 to 2.59 in the paper's data sample. The resulting proxy for global crude oil inventories is expressed in unit changes rather than percent changes for two main reasons. Firstly, percent changes do not appear to be covariance stationary, whereas the unit changes do. Secondly, expressing in unit changes was deemed necessary for properly computing the oil demand elasticity.
+
+## Structural VAR model for Global Market for Crude Oil
+The reduced-form model allows for two years' worth of lags. The corrresponding structural model of the global oil market wass written as:
+\[ \beta_0 y_t = \sum_{i=1}^{24} \beta_1 y_{t-i} + \epsilon_t \]
+where $\epsilon_t$ is the vector of orthogonal structural innovations and $\beta_i$ denotes the coefficient matrices for $i = 0, \dots, 24$. The seasonal dummies were suppressed for notaional convenience. The vector $\epsilon_t$ consists of our four structural shocks:
+
+1. Flow Supply Shock - incorporates supply disruptions associated with exogenous political events in oil-producing countries as well as unexpected politically motivated supply decisions by OPEC members and other flow supply shocks
+2. Flow Demand Shock - incorporates to the demand for crude oil and other industrial commodites that is associated with unexpected fluctuations in the global business cycle
+3. Speculative Demand Shock - captures shifts in the demand for above-ground oil inventories arising from forward-looking behavior not otherwise captured by the model
+4. Residual Shock - captures idiosyncratic oil demand shocks no otherwise acounted for (e.g. weather shocks, changes in technology or prefernces)
+
+
 
 # Part I: Replication of Structural Impulse Responses of Shocks 
 ```{r, child='Figure1.Rmd'}
