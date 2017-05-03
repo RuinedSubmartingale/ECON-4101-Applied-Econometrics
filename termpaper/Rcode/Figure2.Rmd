@@ -1,3 +1,12 @@
+```{r, include=F}
+require(ggplot2)
+require(data.table)
+require(grid)
+require(gridExtra)
+require(R.matlab)
+require(DescTools)
+```
+
 ```{r, cache=T}
 bayesPosterior <- readMat('../BayesPosterior.mat'); IRMposs <- bayesPosterior$IRMposs
 IRFelas <- readMat('../IRFelas.mat'); IRFelas <- IRFelas$IRFelas;
@@ -41,7 +50,7 @@ time = seq(from = (1973+2/12+1/12*p), to = 2009+8/12, by = 1/12); # starts at 19
 cumshock = yhat1 + yhat2 + yhat3 + yhat4;
 ```
 
-```{r}
+```{r, cache = T}
 df <- data.frame(Years=time, CumEffect=yhat1)
 g <- ggplot(mapping=aes(x=time)) + geom_vline(aes(xintercept=1978+9/12)) +
   geom_vline(aes(xintercept=1980+9/12)) +
@@ -49,6 +58,9 @@ g <- ggplot(mapping=aes(x=time)) + geom_vline(aes(xintercept=1978+9/12)) +
   geom_vline(aes(xintercept=1990+7/12)) +
   geom_vline(aes(xintercept=1997+7/12)) +
   geom_vline(aes(xintercept=2002+11/12)) +
+  geom_hline(aes(yintercept=0), linetype = 'dashed') +
+  geom_hline(aes(yintercept=-50), linetype = 'dashed') +
+  geom_hline(aes(yintercept=50), linetype = 'dashed') +
   scale_y_continuous(limits = c(-100, 100)) +
   ylab('')
 g1 <- g + geom_line(aes(y=yhat1), color='blue') +
@@ -59,8 +71,12 @@ g3 <- g + geom_line(aes(y=yhat3), color='blue') +
   ggtitle('Cumulative Effect of Speculative Demand Shock on Real Price of Crude Oil')
 ```
 
-```{r}
-# Figure 2
+## Original Figure 2: Historical Decompositions
+![](screenshots_of_paper/Figure2.png)  
+
+
+## Replicated Figure 2: Historical Decompositions
+```{r, fig.height=8}
 grid.arrange(grobs=list(g1,g2,g3), nrow=3)
 ```
 

@@ -1,3 +1,11 @@
+```{r, include=F}
+require(ggplot2)
+require(data.table)
+require(grid)
+require(gridExtra)
+require(R.matlab)
+```
+
 ```{r, cache=T}
 bayesPosterior <- readMat('../BayesPosterior.mat'); IRMposs <- bayesPosterior$IRMposs
 IRFelas <- readMat('../IRFelas.mat'); IRFelas <- IRFelas$IRFelas;
@@ -39,7 +47,7 @@ fn <- function(title, Months, ylabel, y, yl, yu, ylim) {
 ```
 
 
-```{r}
+```{r, cache=T}
 g1 <- fn('Flow Supply Shock', time, 'Oil Production', -cumsum(IRF[1,]), -CI[1,1,], -CI[2,1,], c(-2,2))
 g5 <- fn('Flow Demand Shock', time, 'Oil Production', cumsum(IRF[5,]), CI[1,5,], CI[2,5,], c(-2,2))
 g9 <- fn('Speculative Demand Shock', time, 'Oil Production', cumsum(IRF[9,]), CI[1,9,], CI[2,9,], c(-2,2))
@@ -58,8 +66,13 @@ g12 <- fn('Speculative Demand Shock', time, 'Inventories', cumsum(IRF[12,]), CI[
 
 globs <- list(g1,g2,g3,g4,g5,g6,g7,g8,g9,g10,g11,g12)
 ```
-```{r}
-# Figure 1
+
+## Original Figure 1: Structural Impulse Responses
+![](screenshots_of_paper/Figure1.png)  
+
+
+## Replicated Figure 1: Structural Impulse Responses
+```{r, fig.height=8}
 grid.arrange(grobs=globs, layout_matrix = matrix(1:12, byrow = T,nrow=3))
 ```
 

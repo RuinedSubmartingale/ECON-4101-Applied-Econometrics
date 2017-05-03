@@ -17,13 +17,52 @@ options(scipen=999)
 library(ggplot2)
 library(gridExtra)
 require(data.table)
-require(R.matlab)
-require(DescTools)
 theme_set(theme_bw())
 ```
 
+# Background Overview
+There are two main competing views of the global market for crude oil:  
+  
+  1. The price of oil is determined by desired stocks. Shifts in the expectations of forward-looking traders (hedgers and speculators) are reflected in changes in the real price of oil and in changes in oil inventories.
+  2. The real price of oil is determined by shocks to the amount of oil coming out of the ground ("flow supply of oil") and the amount of oil being consumed ("flow demand for oil").
+
+Recently, there has been increasing recognition that both elements of price determination matter. In _The Role of Inventories and Speculative Trading in the Global Market for Crude Oil (2013)_, Kilian and Murphy develop a structural vector autoregressive (VAR) model of the global market for crude oil that nests these two theories together and quantifies the effects of shocks to the speculative demand for oil as well as shocks to flow demand and flow supply of oil. The study stresses the importance of oil inventories data for building a model for price of crude oil. The paper attempts to indirectly identify the effects of shifts in expectations (i.e. without explicit measures of expectations) by including changes in oil inventories in their econometric model. They do this because reliable and substantial data on expectation shifts is not readily available, and because how subjective expectations are formed is too complicated of a nonlinear function to be practical in modeling. The model is built off of four main features (measured monthly from 1973:2 to 2009:8):
+
+  1. Percent change in global crude oil production
+  2. Index of global real activity in deviations from trend
+  3. Real price of oil
+  4. Change in above-ground global crude oil inventories
+  
+The authors assert that the variables are mutually endogenous. They include two years worth of lags in the model. The paper models four shocks as its responses:
+
+  1. Flow supply shock - shock to the flow of crude oil production
+  2. Flow demand shock - shock to the demand for crude oil driven by the global business
+  3. Speculative demand shock - shock to the demand for above-ground oil inventories arising from forward-looking behavior
+  4. Residual shock - captures all structural shocks not otherwise accounted for
+  
+\pagebreak
+
+# Methodology
+
+# Part I: Replication of Structural Impulse Responses of Shocks 
 ```{r, child='Figure1.Rmd'}
 ```
 
+\pagebreak
+
+# Part II: Replication of Historical Decompositions of Cumulative Effects of Shocks
 ```{r, child='Figure2.Rmd'}
 ```
+
+\pagebreak
+
+# Discussion
+
+The paper offers explanations for several historical price shocks. In particular, its conclusions on the 2003-08 oil price shock run counter to the prevailing explanations at the time the paper was written; the paper discounts the suggestions that "peak oil" theory, OPEC supply, or speculation by oil traders were responsible for the oil price increase. Instead, the paper claims there is strong evidence that a booming world economy was the cause.
+
+The paper offers three policy conclusions:
+
+  1. Increased regulation of oil traders will not keep the real price of oil down.
+  2. Increased domestic oil production in the U.S. will not lower the real price of oil materially.
+  3. Efforts to revive the world economy will cause the real price of oil to recover.
+
