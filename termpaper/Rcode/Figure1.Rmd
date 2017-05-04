@@ -48,31 +48,71 @@ fn <- function(title, Months, ylabel, y, yl, yu, ylim) {
 
 
 ```{r, cache=T}
-g1 <- fn('Flow Supply Shock', time, 'Oil Production', -cumsum(IRF[1,]), -CI[1,1,], -CI[2,1,], c(-2,2))
-g5 <- fn('Flow Demand Shock', time, 'Oil Production', cumsum(IRF[5,]), CI[1,5,], CI[2,5,], c(-2,2))
-g9 <- fn('Speculative Demand Shock', time, 'Oil Production', cumsum(IRF[9,]), CI[1,9,], CI[2,9,], c(-2,2))
+g1 <- fn('Flow Supply Shock', time
+         , 'Oil Production', -cumsum(IRF[1,])
+         , -CI[1,1,], -CI[2,1,], c(-2,2))
+g5 <- fn('Flow Demand Shock', time
+         , 'Oil Production', cumsum(IRF[5,])
+         , CI[1,5,], CI[2,5,], c(-2,2))
+g9 <- fn('Speculative Demand Shock', time
+         , 'Oil Production', cumsum(IRF[9,])
+         , CI[1,9,], CI[2,9,], c(-2,2))
 
-g2 <- fn('Flow Supply Shock', time, 'Real Activity', -IRF[2,], -CI[1,2,], -CI[2,2,], c(-10,10))
-g6 <- fn('Flow Demand Shock', time, 'Real Activity', IRF[6,], CI[1,6,], CI[2,6,], c(-10,10))
-g10 <- fn('Speculative Demand Shock', time, 'Real Activity', IRF[10,], CI[1,10,], CI[2,10,], c(-10,10))
+g2 <- fn('Flow Supply Shock', time
+         , 'Real Activity', -IRF[2,]
+         , -CI[1,2,], -CI[2,2,], c(-10,10))
+g6 <- fn('Flow Demand Shock', time
+         , 'Real Activity', IRF[6,]
+         , CI[1,6,], CI[2,6,], c(-10,10))
+g10 <- fn('Speculative Demand Shock', time
+          , 'Real Activity', IRF[10,]
+          , CI[1,10,], CI[2,10,], c(-10,10))
 
-g3 <- fn('Flow Supply Shock', time, 'Real Price of Oil', -IRF[3,], -CI[1,3,], -CI[2,3,], c(-10,10))
-g7 <- fn('Flow Demand Shock', time, 'Real Price of Oil', IRF[7,], CI[1,7,], CI[2,7,], c(-10,10))
-g11 <- fn('Speculative Demand Shock', time, 'Real Price of Oil', IRF[11,], CI[1,11,], CI[2,11,], c(-10,10))
+g3 <- fn('Flow Supply Shock', time
+         , 'Real Price of Oil', -IRF[3,]
+         , -CI[1,3,], -CI[2,3,], c(-10,10))
+g7 <- fn('Flow Demand Shock', time
+         , 'Real Price of Oil', IRF[7,]
+         , CI[1,7,], CI[2,7,], c(-10,10))
+g11 <- fn('Speculative Demand Shock', time
+          , 'Real Price of Oil', IRF[11,]
+          , CI[1,11,], CI[2,11,], c(-10,10))
 
-g4 <- fn('Flow Supply Shock', time, 'Inventories', -cumsum(IRF[4,]), -CI[1,4,], -CI[2,4,], c(-20,20))
-g8 <- fn('Flow Demand Shock', time, 'Inventories', cumsum(IRF[8,]), CI[1,8,], CI[2,8,], c(-20,20))
-g12 <- fn('Speculative Demand Shock', time, 'Inventories', cumsum(IRF[12,]), CI[1,12,], CI[2,12,], c(-20,20))
+g4 <- fn('Flow Supply Shock', time
+         , 'Inventories', -cumsum(IRF[4,])
+         , -CI[1,4,], -CI[2,4,], c(-20,20))
+g8 <- fn('Flow Demand Shock', time
+         , 'Inventories', cumsum(IRF[8,])
+         , CI[1,8,], CI[2,8,], c(-20,20))
+g12 <- fn('Speculative Demand Shock', time
+          , 'Inventories', cumsum(IRF[12,])
+          , CI[1,12,], CI[2,12,], c(-20,20))
 
 globs <- list(g1,g2,g3,g4,g5,g6,g7,g8,g9,g10,g11,g12)
 ```
 
-## Original Figure 1: Structural Impulse Responses
-![](screenshots_of_paper/Figure1.png)  
+### Original Figure 1: Structural Impulse Responses
+![Original Figure 1](screenshots_of_paper/Figure1.png)  
 
+\break
 
-## Replicated Figure 1: Structural Impulse Responses
-```{r, fig.height=8}
+### Replicated Figure 1: Structural Impulse Responses
+```{r, fig.height=6}
 grid.arrange(grobs=globs, layout_matrix = matrix(1:12, byrow = T,nrow=3))
 ```
+
+### Comparison of Replication Results for Figure 1
+Figure 1 plots the responses of each variable in this benchmark model to the three oil supply and oil demand shocks, along with the corresponding pointwise 68% poseterior error bands obtained by drawing from the reduced-form posterior distribution. All shocks have been normalized such that they imply an increase in the real price of oil.
+
+#### Response of Oil Production
+Our replicated responses of oil production to the three shocks closely mirror those reported in the paper, both in magnitude of effect and in trend over time. As such, our replicated results support the paper's findings on oil production responses: a negative flow spply shock is associated with a persistent decrease; a positive flow demand shock causes a temporary increase; and a positive speculative demand shock causes a negative, but small, effect.
+
+#### Response of Real Activity
+Our replicated responses of real activity levels to the three shocks closely mirror those reported in the paper, both in magnitude of effect and in trend over time. As such, our replicated results support the paper's findings on real activity responses: a negative flow supply shock causes a small but persistent reduction; a positive flow demand shock causes a sizeable persistent increase; and a positive speculative demand shock casues a small negative effect.
+
+#### Response of Real Price of Oil
+Our replicated responses of the real price of oil to flow supply and demand shocks closely mirror those reported in the paper, both in magnitude of effect and in trend over time. However, our replicated response of the real price of oil to speculative demand differs significantly from that which was reported in the paper. In particular, our replicated findings support the paper's claim that a negative flow supply shock temporarily increases the real price of oil, but returns to its original price within a year and continues to fall as real activity continues to decrease. Our replicated findings also support the paper's claim that a positive flow demand causes a hump-shaped rise in the real price of oil which peaks about one year in. However, whereas the paper reported that a positive speculative demand shock caused an immediate significant jump in oil prices, our replicated findings didn't reflect this. Furthermore, the paper reported that this immediate jump was an overshooting of the price and was followed by a steady gradual decline in the real price of oil. While our replicated results also indicate that a positive speculative demand shock causes an overshooting of the real price of oil, our results suggest it happens much later than what was reported in the paper, and our results don't support the subsequent steady gradual decline effect.
+
+#### Response of Inventories
+While our replicated results for the response of inventory to flow supply and speculative demand shocks differ insignificantly in magnitude, the response over the next 18 months following the shock follows the same general trend as that reported in the paper. Our replicated response of inventory to flow demand shocks closely mirrors the paper's reported one. Moreover, the paper's main takeaway for the inventory responses remains visible in our replicated results: a flow supply shock yields a negative response; a flow demand shock causes almost no change on impact, followed by a temporary drawdown of oil inventories and a gradual recovery within 1 year; and a speculative demand shock causes a persistent increase in inventories.
 
